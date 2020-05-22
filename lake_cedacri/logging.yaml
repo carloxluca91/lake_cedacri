@@ -1,0 +1,16 @@
+version: 1
+formatters:
+  standard_format:
+    format: "%(asctime)s [%(levelname)s] %(filename)s.%(funcName)s: %(message)s"
+    datefmt: "%Y-%m-%d %H:%M:%S"
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    level: INFO
+    formatter: standard_format
+    stream: ext://sys.stdout
+
+root:
+  handlers: [console]
+  level: INFO
