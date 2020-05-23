@@ -1,14 +1,15 @@
 
-
 if __name__ == "__main__":
 
+    # TODO: check presence of PyYaml package
+    import yaml
     import argparse
     import logging
+
     from logging import config
     from datetime import datetime
-
-    # TODO: check presence of yaml package
-    import yaml
+    from lake_cedacri.bancll_runner import BancllRunner
+    from lake_cedacri.time.formats import JAVA_TO_PYTHON_FORMAT
 
     # LOGGING CONFIGURATION
     with open("logging.yaml", "r") as f:
@@ -17,24 +18,52 @@ if __name__ == "__main__":
 
     logger = logging.getLogger(__name__)
     logger.info("Successfully loaded logging configuration")
-
     parser = argparse.ArgumentParser()
 
-    # OPTION -a, --all
-    parser.add_argument("-r", "--raw-source", type=str, nargs="+", dest="raw_sources", metavar="source",
+    # OPTION -b, --bancll
+    parser.add_argument("-b", "--bancll", type=str, nargs="+", dest="bancll_names", metavar="source",
                         help="list of raw sources (BANCLL) to be loaded (separated by blank space if more than one)",
                         required=True)
 
-    # OPTION -s, --steps
-    parser.add_argument("-b", "--business--date", type=str, nargs="?", dest="business_date", metavar="date",
+    # OPTION -d, --dt-business--date
+    parser.add_argument("-d", "--dt-business--date", type=str, dest="dt_business_date", metavar="date",
                         help="dt_business_date to be used for data loading (format yyyy-MM-dd")
 
+    # OPTION -f, --file
+    parser.add_argument("-f", "--file", type=str, dest="spark_job_yaml_file", metavar="example.yaml",
+                        help=".yaml file holding spark job information supplied via spark-submit --files option", required=True)
+
     parsed_arguments = parser.parse_args()
-    bancll_names = parsed_arguments.raw_sources
-    (dt_business_date, provided) = (datetime.now().strftime("%Y-%m-%d"), False) if parsed_arguments.business_date is None \
-        else (parsed_arguments.business_date, True)
+
+    # INPUT PARAMETERS
+    bancll_names = parsed_arguments.bancll_names
+    input_dt_business_date = parsed_arguments.dt_business_date
+    spark_job_yaml_file = parsed_arguments.spark_job_yaml_file
+
+    # CHECK
+    # [a] THAT BUSINESS DATE IS CORRECT (IF PROVIDED)
+    dt_business_date_format = JAVA_TO_PYTHON_FORMAT["yyyy-MM-dd"]
+    if input_dt_business_date is not None:
+
+        try:
+            dt_business_date = datetime.strptime(input_dt_business_date, dt_business_date_format)
+
+        except Exception:
+
+            raise ValueError("Invalid dt_business_date: {}. It should follow format {}".format(
+                input_dt_business_date, dt_business_date_format))
+
+    else:
+
+        dt_business_date = datetime.now().strftime(dt_business_date_format)
+
+    # [b] THAT THE PROVIDED FILE IS A .yaml
+    if not spark_job_yaml_file.endswith(".yaml"):
+
+        raise ValueError("Invalid file for spark job: {}. It should be a .yaml file".format(spark_job_yaml_file))
 
     logger.info("Provided {} BANCLL(s): {}".format(len(bancll_names), bancll_names))
-    dt_business_date_log_string = "Working business date: {} (provided)".format(dt_business_date) if provided \
-        else "Working business date: {} (not provided)".format(dt_business_date)
-    logger.info(dt_business_date_log_string)
+    logger.info("Working business date: {}".format(dt_business_date))
+    logger.info("Spark job .yaml file name: {}".format(spark_job_yaml_file))
+
+    BancllRunner(bancll_names, dt_business_date, spark_job_yaml_file).run()

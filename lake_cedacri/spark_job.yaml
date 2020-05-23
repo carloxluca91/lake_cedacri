@@ -1,0 +1,7 @@
+database:
+  raw: lake_cedacri
+  trusted: pc_aurora_analysis
+
+table:
+  log: raw_dataload_log
+  specification: t_trd_mapping_specification
