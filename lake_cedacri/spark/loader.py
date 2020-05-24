@@ -26,6 +26,7 @@ class BancllLoader:
 
         if table_name in self.__sql_context.tableNames(database_name):
 
+            self.__logger.info("Table {} exists within database {}".format(table_name, database_name))
             return self.__sql_context.table("{}.{}".format(database_name, table_name))
 
         else:
@@ -34,19 +35,21 @@ class BancllLoader:
 
     def run(self, bancll_name, dt_business_date):
 
-        from pyspark.sql import SparkSession
         from pyspark.sql import functions
-        from lake_cedacri.spark.exceptions import InvalidSourceError
+        from lake_cedacri.spark.exceptions import InvalidBANCLLSourceError
+        from lake_cedacri.spark.exceptions import UndefinedBANCLLError
 
-        mapping_specification_filtered = SparkSession.createDataFrame()
-        # mapping_specification_filtered = self.__mapping_specification_df.filter(functions.col("flusso") == bancll_name)
-        bancll_raw_table_name_rows = mapping_specification_filtered.selectExpr("sorgente_rd").distinct().collect
-        if len(bancll_raw_table_name_rows) > 1:
+        bancll_specification_rows = self.__mapping_specification_df.filter(functions.col("flusso") == bancll_name).collect()
+        if len(bancll_specification_rows) == 0:
 
-            bancll_raw_sources = list(map(lambda x: x["sorgente_rd"], bancll_raw_table_name_rows))
-            raise InvalidSourceError(bancll_name, bancll_raw_sources)
+            raise UndefinedBANCLLError(bancll_name)
 
-        bancll_raw_column_specs = mapping_specification_filtered.selectExpr("colonna_rd", "tipo_colonna_rd", "posizione_iniziale").collect()
+        bancll_raw_table_names = set(map(lambda x: x["sorgente_rd"], bancll_specification_rows))
+        if len(bancll_raw_table_names) > 1:
+
+            raise InvalidBANCLLSourceError(bancll_name, bancll_raw_table_names)
+
+        bancll_raw_column_specs = bancll_specification_rows.selectExpr("colonna_rd", "tipo_colonna_rd", "posizione_iniziale").collect()
         bancll_raw_column_names = list(map(lambda x: x["colonna_rd"], bancll_raw_column_specs))
         bancll_raw_column_types = list(map(lambda x: x["tipo_colonna_rd"], bancll_raw_column_specs))
         bancll_raw_column_posiions = list(map(lambda x: x["posizione_iniziale"], bancll_raw_column_specs))

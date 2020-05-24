@@ -6,16 +6,13 @@ def prefix(bancll_name):
     return INVALID_SPECIFICATION_STRING.format(bancll_name)
 
 
-class InvalidSourceError(Exception):
+class UndefinedBANCLLError(Exception):
 
-    def __init__(self, bancll_name, raw_sources):
+    def __init__(self, bancll_name):
 
-        message_suffix = "Specified more than 1 source table ({})".format(", ".join(raw_sources))
-        self.message = "{}. {}".format(prefix(bancll_name), message_suffix)
+        self.message = "Unable to find specification for BANCLL {}".format(bancll_name)
 
-    def __str__(self):
-
-        return self.message
+    def __str__(self): return self.message
 
 
 class UnexistingTableError(Exception):
@@ -24,10 +21,19 @@ class UnexistingTableError(Exception):
 
         self.message = "Unable to find table {} within database {}".format(table_name, database_name)
 
-    def __str__(self):
-
-        return self.message
+    def __str__(self): return self.message
 
 
+class InvalidBANCLLSourceError(Exception):
+
+    def __init__(self, bancll_name, raw_sources):
+
+        message_suffix = "Specified more than 1 source table ({})".format(", ".join(raw_sources))
+        self.message = "{}. {}".format(prefix(bancll_name), message_suffix)
+
+    def __str__(self): return self.message
+
+
+# raise UndefinedBancllError("aaa")
 # raise InvalidSourceError("aaa", ["1", "2"])
 # raise UnexistingTableError("db", "tb1")
