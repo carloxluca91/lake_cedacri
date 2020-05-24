@@ -8,7 +8,7 @@ if __name__ == "__main__":
 
     from logging import config
     from datetime import datetime
-    from lake_cedacri.bancll_runner import BancllRunner
+    from lake_cedacri.spark.ingestion import IngestionRunner
     from lake_cedacri.time.formats import JAVA_TO_PYTHON_FORMAT
 
     # LOGGING CONFIGURATION
@@ -66,4 +66,9 @@ if __name__ == "__main__":
     logger.info("Working business date: {}".format(dt_business_date))
     logger.info("Spark job .yaml file name: {}".format(spark_job_yaml_file))
 
-    BancllRunner(bancll_names, dt_business_date, spark_job_yaml_file).run()
+    with open(spark_job_yaml_file, "r") as f:
+
+        job_properties_dict = yaml.safe_load(f.read())
+
+    logger.info("Successfully loaded job properties dict")
+    IngestionRunner(job_properties_dict).run(bancll_names, dt_business_date)
