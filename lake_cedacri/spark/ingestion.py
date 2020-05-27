@@ -11,6 +11,7 @@ class IngestionRunner:
         self.__logger = logging.getLogger(__name__)
         self.__job_properties_dict = job_properties_dict
 
+        # INITIALIZE SPARKCONTEXT AND SQLCONTEXT
         self.__spark_context = SparkContext(SparkConf())
         self.__sql_context = HiveContext(self.__spark_context)
         self.__logger.info("Successfully initialized both SparkContext and SqlContext")
@@ -85,5 +86,7 @@ class IngestionRunner:
         else:
 
             self.__logger.warning("Logging table {} does not exist yet. Creating it now".format(log_table_full_name))
+
+            # TODO: INDAGARE SAVE_AS_TABLE
             log_record_spark_df.write.format("parquet").saveAsTable(log_table_full_name)
             self.__logger.info("Successfully created logging table {}".format(log_table_full_name))

@@ -34,6 +34,61 @@ class InvalidBANCLLSourceError(Exception):
     def __str__(self): return self.message
 
 
-# raise UndefinedBancllError("aaa")
-# raise InvalidSourceError("aaa", ["1", "2"])
-# raise UnexistingTableError("db", "tb1")
+class DuplicateColumnError(Exception):
+
+    def __init__(self, bancll_name, duplicated_columns):
+
+        message_suffix = "Duplicated column name(s) ({})".format(", ".join(duplicated_columns))
+        self.message = "{}. {}".format(prefix(bancll_name), message_suffix)
+
+    def __str__(self): return self.message
+
+
+class UnknownDataTypeError(Exception):
+
+    def __init__(self, bancll_name, unknown_types):
+
+        message_suffix = "Unknown data type(s): () ".format(", ".join(unknown_types))
+        self.message = "{}. {}".format(prefix(bancll_name), message_suffix)
+
+    def __str__(self): return self.message
+
+
+class NegativeColumnIndexError(Exception):
+
+    def __init__(self, bancll_name, negative_index):
+
+        message_suffix = "Negative column index: ({}) ".format(negative_index)
+        self.message = "{}. {}".format(prefix(bancll_name), message_suffix)
+
+    def __str__(self): return self.message
+
+
+class InvalidMinColumnIndexError(Exception):
+
+    def __init__(self, bancll_name, invalid_index):
+
+        message_suffix = "Invalid min column index: ({}). Should be 0".format(invalid_index)
+        self.message = "{}. {}".format(prefix(bancll_name), message_suffix)
+
+    def __str__(self): return self.message
+
+
+class InvalidMaxColumnIndexError(Exception):
+
+    def __init__(self, bancll_name, max_index, min_index):
+
+        message_suffix = "Invalid max column index: ({}). Should be greater or equal than {}".format(max_index, min_index)
+        self.message = "{}. {}".format(prefix(bancll_name), message_suffix)
+
+    def __str__(self): return self.message
+
+
+class NonContinuousRangeError(Exception):
+
+    def __init__(self, bancll_name, missing_index):
+
+        message_suffix = "Missing column index : ({}) ".format(missing_index)
+        self.message = "{}. {}".format(prefix(bancll_name), message_suffix)
+
+    def __str__(self): return self.message
