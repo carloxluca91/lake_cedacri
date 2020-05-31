@@ -10,7 +10,7 @@ def _get_specification_schema(json_schema_str: str):
 
     import json
 
-    from lake_cedacri.spark.spark_types import DATA_TYPE_DICT
+    from src.spark.spark_types import DATA_TYPE_DICT
     from pyspark.sql.types import StructField, StructType
 
     mapping_specification_schema_dict = json.load(json_schema_str)

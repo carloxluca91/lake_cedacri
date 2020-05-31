@@ -1,15 +1,15 @@
 import configparser
 
-from lake_cedacri.spark.abstract import AbstractBancllLoader
-from lake_cedacri.time.formats import JAVA_TO_PYTHON_FORMAT
+from src.spark.abstract import AbstractBancllLoader
+from src.spark.time import JAVA_TO_PYTHON_FORMAT
 from pyspark.sql import DataFrame, Row
 from typing import List, Set, Tuple
 
 
 def _validate_bancll_specification(bancll_name, bancll_specification_rows):
 
-    from lake_cedacri.spark.spark_types import SPARK_ALLOWED_TYPES
-    import lake_cedacri.spark.exceptions as exceptions
+    from src.spark.spark_types import SPARK_ALLOWED_TYPES
+    import src.spark.exceptions as exceptions
 
     # VALIDATION OF BANCLL SPECIFICATION
     # [a] IS COLUMN 'sorgente_rd' UNIQUE FOR THE PROVIDED BANCLL ?
@@ -96,7 +96,7 @@ class BancllLoader(AbstractBancllLoader):
         # NO CONFIGURATION FOUND ?
         if len(bancll_specification_rows) == 0:
 
-            from lake_cedacri.spark.exceptions import UndefinedBANCLLError
+            from src.spark.exceptions import UndefinedBANCLLError
             raise UndefinedBANCLLError(bancll_name)
 
         self.__logger.info(f"Identified {len(bancll_specification_rows)} rows related to BANCLL {bancll_name}")
