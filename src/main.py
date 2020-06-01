@@ -8,11 +8,11 @@ if __name__ == "__main__":
     from logging import config
     from typing import List
     from datetime import datetime
-    from src.spark.loading import BancllLoader
+    from src.spark.load import BancllLoader
     from src.spark.time import JAVA_TO_PYTHON_FORMAT
 
     # LOGGING CONFIGURATION
-    with open("conf/logging.ini", "r") as f:
+    with open("src/conf/logging.ini", "r") as f:
 
         config.fileConfig(f)
 

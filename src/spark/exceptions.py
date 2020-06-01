@@ -1,4 +1,4 @@
-INVALID_SPECIFICATION_STRING = "Invalid specification for BANCLL {0}"
+INVALID_SPECIFICATION_STRING = "Invalid specification for BANCLL \"{0}\""
 
 
 def prefix(bancll_name):
@@ -39,7 +39,7 @@ class UnknownDataTypeError(Exception):
 
     def __init__(self, bancll_name, unknown_types):
 
-        message_suffix = "Unknown data type(s): () ".format(", ".join(unknown_types))
+        message_suffix = "Unknown data type(s): ({}) ".format(", ".join(unknown_types))
         self.message = f"{prefix(bancll_name)}. {message_suffix}"
 
     def __str__(self): return self.message
@@ -85,11 +85,11 @@ class NonContinuousRangeError(Exception):
     def __str__(self): return self.message
 
 
-class UndefinedDateFormatError(Exception):
+class UnmatchedDateFormatError(Exception):
 
     def __init__(self, bancll_name, undefined_formats):
 
-        message_suffix = "Undefined date formats : ({}) ".format(", ".join(undefined_formats))
+        message_suffix = "Unable to match date formats : ({}) ".format(", ".join(undefined_formats))
         self.message = f"{prefix(bancll_name)}. {message_suffix}"
 
     def __str__(self): return self.message

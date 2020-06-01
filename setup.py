@@ -32,7 +32,9 @@ setup(
     author="Luca Carloni",
     author_email="carloni.luca91@gmail.com",
     packages=find_packages(),
+    package_data={"src": ["conf/logging.ini"]},
+    include_package_data=True,
     cmdclass={'build_py': BuildPy},
-    install_requires=["pyspark>=2.2", "pandas>=0.23", "numpy"],
+    install_requires=["pyspark>=2.2", "pandas>=0.23", "numpy", 'names'],
     python_requires=">=3.5"
 )
