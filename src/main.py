@@ -68,7 +68,7 @@ if __name__ == "__main__":
 
     logger.info(f"Provided {len(bancll_names)} BANCLL(s): {bancll_names}")
     logger.info(f"Working business date: {dt_business_date}")
-    logger.info(f"Spark job .yaml file name: {spark_job_ini_file}")
+    logger.info(f"Spark job .ini file name: {spark_job_ini_file}")
 
     with open(spark_job_ini_file, "r") as f:
 
@@ -77,7 +77,7 @@ if __name__ == "__main__":
         job_properties.read(spark_job_ini_file)
         logger.info("Successfully loaded job properties dict")
 
-    default_number_of_records: int = job_properties["spark"]["raw_dataframe_count"]
+    default_number_of_records: int = int(job_properties["spark"]["raw_dataframe_count"])
     number_of_records = default_number_of_records if number_of_records is None else number_of_records
     logger.info(f"Number of records to generate: {number_of_records}")
 

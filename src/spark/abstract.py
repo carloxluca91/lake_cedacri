@@ -124,7 +124,8 @@ class AbstractBancllLoader(ABC):
         dataframe.printSchema()
 
         # SAVE THE DATAFRAME
-        dataframe.write\
+        dataframe.coalesce(1)\
+            .write\
             .format(raw_dataframe_file_format)\
             .mode(raw_dataframe_savemode)\
             .option("path", raw_dataframe_save_full_path)\
