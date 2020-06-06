@@ -6,7 +6,7 @@ from pyspark.sql import DataFrame, Row
 from typing import List, Set, Tuple
 
 
-class BancllLoader(AbstractBancllLoader):
+class SourceLoadEngine(AbstractBancllLoader):
 
     def __init__(self, job_properties: configparser.ConfigParser, n_records: int):
 
