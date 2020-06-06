@@ -5,13 +5,16 @@ config = {
     'port': 3306,
     'user': 'consulente',
     'password': 'Velvet2791!',
-    'raise_on_warnings': True
+    'raise_on_warnings': True,
+    'ssl_disabled': True
 }
 
 cnx = mysql.connector.connect(**config)
 cursor = cnx.cursor()
 cursor.execute("show databases")
 
-for database in cursor:
+existing_databases: str = ", ".join(map(lambda x: x[0], cursor))
+print(f"existing databases: {existing_databases}")
+for (database, ) in cursor:
 
-    print(database)
+    print(type(database), database)

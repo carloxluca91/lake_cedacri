@@ -8,8 +8,9 @@ if __name__ == "__main__":
     from logging import config
     from typing import List
     from datetime import datetime
-    from branch.enum import Branch
-    from spark.engine.source_load import SourceLoadEngine
+    from src.spark.branch.enum import Branch
+    from src.spark.engine.initial_load import InitialLoadEngine
+    from src.spark.engine.source_load import SourceLoadEngine
     from src.spark.time import JAVA_TO_PYTHON_FORMAT
 
     # LOGGING CONFIGURATION
@@ -43,7 +44,7 @@ if __name__ == "__main__":
         spark_job_ini_file: str = parsed_arguments.spark_job_ini_file
         logger.info(f"Provided spark job file: {spark_job_ini_file}")
 
-        # TODO: class for initial load branch
+        InitialLoadEngine(spark_job_ini_file).run()
 
     elif branch_name == Branch.SOURCE_LOAD.name:
 
