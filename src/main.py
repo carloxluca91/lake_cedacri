@@ -14,7 +14,7 @@ if __name__ == "__main__":
     from src.spark.time import JAVA_TO_PYTHON_FORMAT
 
     # LOGGING CONFIGURATION
-    with open("src/conf/logging.ini", "r") as f:
+    with open("src/logging.ini", "r") as f:
 
         config.fileConfig(f)
 
@@ -30,7 +30,7 @@ if __name__ == "__main__":
     branch_name: str = parsed_arguments.branch_name.upper()
     logger.info(f"Parsed branch name: {branch_name}")
 
-    if branch_name == Branch.INITIAL_LOAD.name:
+    if branch_name == Branch.INITIAL_LOAD.value:
 
         initial_load_parser = argparse.ArgumentParser()
 
@@ -46,7 +46,7 @@ if __name__ == "__main__":
 
         InitialLoadEngine(spark_job_ini_file).run()
 
-    elif branch_name == Branch.SOURCE_LOAD.name:
+    elif branch_name == Branch.SOURCE_LOAD.value:
 
         source_load_parser = argparse.ArgumentParser()
 
@@ -99,7 +99,7 @@ if __name__ == "__main__":
 
         with open(spark_job_ini_file, "r") as f:
 
-            # SET INTERPOLATION TO EXTENDE IN ORDER TO INTERPOLATE FROM OTHER SECTIONS AS WELL
+            # SET INTERPOLATION TO EXTENDED IN ORDER TO INTERPOLATE FROM OTHER SECTIONS AS WELL
             job_properties: configparser.ConfigParser = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
             job_properties.read(f)
             logger.info("Successfully loaded job properties dict")

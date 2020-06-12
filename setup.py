@@ -3,7 +3,7 @@ from setuptools import find_packages, setup
 from setuptools.command.build_py import build_py as build_py_orig
 
 
-exclude = ['src.main']
+exclude = ["src.main", "src.conf"]
 
 
 class BuildPy(build_py_orig):
@@ -25,16 +25,16 @@ setup(
 
     name="lake_cedacri",
     version="0.0.1",
-    description="Python package that output .parquet file for testing aurora_scala project",
+    description="Python project that populates tables on MySQL server using pyspark.sql API",
     long_description=read_me(),
     long_description_content_type="text/markdown",
     url="https://github.com/carloxluca91/lake_cedacri.git",
     author="Luca Carloni",
     author_email="carloni.luca91@gmail.com",
     packages=find_packages(),
-    package_data={"src": ["conf/logging.ini"]},
+    package_data={"src": ["logging.ini"]},
     include_package_data=True,
     cmdclass={'build_py': BuildPy},
-    install_requires=["pyspark>=2.2", "pandas>=0.23", "numpy", 'names', 'mysql-connector-python'],
+    install_requires=["pyspark>=2.2", "pandas>=0.23", "numpy", 'names', "mysql-connector-python"],
     python_requires=">=3.5"
 )

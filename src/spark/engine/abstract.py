@@ -29,6 +29,7 @@ class AbstractEngine(ABC):
 
         self.__logger.info(f"Successfully created SparkSession")
         self.__logger.info(f"Spark application UI url: {self._spark_session.sparkContext.uiWebUrl}")
+        self.__logger.info(f"Job properties sections: {self._job_properties.sections()}")
 
         jdbc_host = self._job_properties["jdbc"]["host"]
         jdbc_port = int(self._job_properties["jdbc"]["port"])
