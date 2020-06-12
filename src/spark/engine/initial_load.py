@@ -8,7 +8,7 @@ from src.spark.engine.abstract import AbstractEngine
 
 class InitialLoadEngine(AbstractEngine):
 
-    def __init__(self, job_ini_file: str):
+    def __init__(self, job_ini_file):
 
         super().__init__(job_ini_file)
         self.__logger = logging.getLogger(__name__)
@@ -52,7 +52,7 @@ class InitialLoadEngine(AbstractEngine):
 
             self.__logger.warning(f"DB \'{database_to_create}\' does not exist yet")
             self.__logger.info("Attempting to create it now")
-            self._mysql_cursor.execute(f"CREATE DATABASE IF NOT EXIST {database_to_create}")
+            self._mysql_cursor.execute(f"CREATE DATABASE IF NOT EXISTS {database_to_create}")
             self.__logger.info(f"Successuflly created DB \'{database_to_create}\'")
 
         else:

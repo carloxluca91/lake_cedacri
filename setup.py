@@ -3,7 +3,7 @@ from setuptools import find_packages, setup
 from setuptools.command.build_py import build_py as build_py_orig
 
 
-exclude = ["src.main", "src.conf"]
+exclude = ["src.main"]
 
 
 class BuildPy(build_py_orig):

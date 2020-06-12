@@ -11,7 +11,7 @@ if __name__ == "__main__":
     from src.spark.branch.enum import Branch
     from src.spark.engine.initial_load import InitialLoadEngine
     from src.spark.engine.source_load import SourceLoadEngine
-    from src.spark.time import JAVA_TO_PYTHON_FORMAT
+    from src.spark.time import BUSINESS_DATE_FORMAT, JAVA_TO_PYTHON_FORMAT
 
     # LOGGING CONFIGURATION
     with open("src/logging.ini", "r") as f:
@@ -61,7 +61,7 @@ if __name__ == "__main__":
                             required=True)
 
         # OPTION -d, --business--date
-        business_date_format: str = JAVA_TO_PYTHON_FORMAT["yyyy-MM-dd"]
+        business_date_format: str = JAVA_TO_PYTHON_FORMAT[BUSINESS_DATE_FORMAT]
         source_load_parser.add_argument("-d", "--business--date", type=str, dest="dt_business_date", metavar="date",
                             help=f"dt_business_date to be used for data loading (format {business_date_format})", required=False)
 
