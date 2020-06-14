@@ -22,10 +22,6 @@ class InitialLoadEngine(AbstractEngine):
         try:
 
             self.__load_mapping_specification(database_to_create, table_to_create)
-            self._insert_application_log(Branch.INITIAL_LOAD.value,
-                                         bancll_name=None,
-                                         dt_business_date=None,
-                                         impacted_table=table_to_create)
 
         except Exception as e:
 
@@ -38,6 +34,13 @@ class InitialLoadEngine(AbstractEngine):
                                          impacted_table=table_to_create,
                                          exception_message=str(e))
 
+        else:
+
+            self._insert_application_log(Branch.INITIAL_LOAD.value,
+                                         bancll_name=None,
+                                         dt_business_date=None,
+                                         impacted_table=table_to_create)
+
     def __create_database_if_not_exists(self, database_to_create: str):
 
         self.__logger.info(f"Checking existence of DB \'{database_to_create}\'")
@@ -45,7 +48,8 @@ class InitialLoadEngine(AbstractEngine):
 
         # GET LIST OF EXISTING DATABASES
         existing_databases: List[str] = list(map(lambda x: x[0], self._mysql_cursor))
-        self.__logger.info(f"""Existing DB(s): {", ".join(map(lambda x: "'{}'".format(x), existing_databases))}""")
+        existing_databases_str: str = ", ".join(map(lambda x: f"\'{x}\'", existing_databases))
+        self.__logger.info(f"Existing DB(s): {existing_databases_str}")
 
         # CHECK IF GIVEN DATABASE ALREADY EXISTS
         if database_to_create not in existing_databases:

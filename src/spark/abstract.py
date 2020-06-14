@@ -52,8 +52,6 @@ class AbstractBancllLoader(ABC):
             "COD_ISTITUTO": self._sample_from_range(["1", "13", "27", "46", "94", "95", "122"]),
             "NDG": self._sample_from_range(list(map(lambda x: str(x), range(27910, 51840)))),
             "TIPO_NDG": self._sample_from_range(["PRIV", "DIP", "CO", "CODIP"]),
-            "NOME": self._get_name_list(name_type="first"),
-            "COGNOME": self._get_name_list(name_type="last"),
             "DATA": self._generate_datetime_list,
             "TIMESTAMP": self._generate_datetime_list,
             "STATO_NDG": self._sample_from_range(["ATTIVO", "NON ATTIVO"])
@@ -97,14 +95,6 @@ class AbstractBancllLoader(ABC):
 
         effective_size: int = self.__n_records if size is None else size
         return self.__rng.choice(value_range, effective_size)
-
-    def _get_name_list(self, name_type: str, size: int = None):
-
-        import names
-
-        effective_size: int = self.__n_records if size is None else size
-        return [names.get_first_name() for _ in range(effective_size)] if name_type == "first" else \
-            [names.get_last_name() for _ in range(effective_size)]
 
     def _save_dataframe_at_path(self, dataframe: DataFrame, bancll_name: str, dt_business_date: str):
 

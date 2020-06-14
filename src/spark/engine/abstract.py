@@ -1,34 +1,25 @@
+import os
 import configparser
 import logging
-import os
+import mysql.connector
+
 from abc import ABC
 from datetime import date, datetime
-from typing import List, Tuple, Union
-
-import mysql.connector
 from pyspark import SparkContext
 from pyspark.sql import DataFrame, DataFrameReader, SparkSession
-from pyspark.sql.types import DateType, IntegerType, StringType, TimestampType
 from pyspark.sql.types import StructField, StructType
-
+from src.spark.types import DATA_TYPE_DICT
 from src.spark.time import BUSINESS_DATE_FORMAT, JAVA_TO_PYTHON_FORMAT
+from typing import List, Tuple, Union
 
 
 def from_json_to_struct_type(json_string: str) -> StructType:
 
     import json
 
-    column_type_dict: dict = {
-
-        "string": StringType(),
-        "int": IntegerType(),
-        "date": DateType(),
-        "timestamp": TimestampType()
-    }
-
     column_list: List[dict] = json.loads(json_string, encoding="UTF-8")["schema"]
     return StructType(list(map(lambda x: StructField(name=x["name"],
-                                                     dataType=column_type_dict[x["type"]],
+                                                     dataType=DATA_TYPE_DICT[x["type"]],
                                                      nullable=True if x["nullable"].lower() == "true" else False),
                                column_list)))
 
@@ -54,11 +45,12 @@ class AbstractEngine(ABC):
             self.__logger.info("Successfully loaded job properties dict")
             self.__logger.info(f"Job properties sections: {self._job_properties.sections()}")
 
+        self.__logger.info(f"Trying to get or create SparkSession")
         self._spark_session: SparkSession = SparkSession \
             .builder \
             .getOrCreate()
 
-        self.__logger.info(f"Successfully created SparkSession")
+        self.__logger.info(f"Successfully got or created SparkSession")
         self.__logger.info(f"Spark application UI url: {self._spark_session.sparkContext.uiWebUrl}")
 
         jdbc_host = self._job_properties["jdbc"]["host"]
@@ -151,6 +143,17 @@ class AbstractEngine(ABC):
 
         self._write_to_jdbc(logging_record_df, database_name, table_name, "append")
 
+    def _read_from_jdbc(self, database_name: str, table_name: str) -> DataFrame:
+
+        self.__logger.info(f"Starting to load table \'{database_name}\'.\'{table_name}\'")
+
+        dataframe: DataFrame = self._spark_jdbc_reader\
+            .option("dbtable", f"{database_name}.{table_name}")\
+            .load()
+
+        self.__logger.info(f"Successfully loaded table \'{database_name}\'.\'{table_name}\'")
+        return dataframe
+
     def _read_mapping_specification_from_file(self) -> DataFrame:
 
         # RETRIEVE SETTINGS FOR FILE READING
@@ -175,13 +178,12 @@ class AbstractEngine(ABC):
 
     def _table_exists(self, database_name: str, table_name: str) -> bool:
 
-        self._mysql_cursor.execute(f"USE {database_name}")
-        self._mysql_cursor.execute("SHOW TABLES")
+        self._mysql_cursor.execute(f"SHOW TABLES IN {database_name}")
 
         # GET LIST OF EXISTING TABLES WITHIN GIVEN DATABASE
         existing_tables: List[str] = list(map(lambda x: x[0].lower(), self._mysql_cursor))
-        self.__logger.info(f"""Existing tables within DB \'{database_name}\': 
-                                    {", ".join(map(lambda x: "'{}'".format(x), existing_tables))}""")
+        existing_tables_str: str = ", ".join(map(lambda x: f"\'{x}\'", existing_tables))
+        self.__logger.info(f"Existing tables within DB \'{database_name}\': {existing_tables_str}")
 
         return table_name.lower() in existing_tables
 
@@ -189,6 +191,7 @@ class AbstractEngine(ABC):
 
         full_table_name: str = f"{database_name}.{table_name}"
         truncate_option: str = "true" if savemode.lower() == "overwrite" and truncate else "false"
+        self.__logger.info(f"Value of \'truncate\' option: {truncate_option}")
         self.__logger.info(f"Starting to insert data into table \'{full_table_name}\' using savemode \'{savemode}\'")
 
         dataframe.write\

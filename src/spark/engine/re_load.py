@@ -7,16 +7,16 @@ from src.spark.branch.enum import Branch
 
 class ReloadEngine(AbstractEngine):
 
-    def __init__(self, complete_overwrite: bool, job_ini_file: str):
+    def __init__(self, overwrite_flag: bool, job_ini_file: str):
 
         """
-        :param complete_overwrite: flag to control how to reload mapping_specification table.
+        :param overwrite_flag: flag to control how to reload mapping_specification table.
         :param job_ini_file: .ini file holding Spark job useful information
         """
 
         super().__init__(job_ini_file)
         self.__logger = logging.getLogger(__name__)
-        self.__complete_overwrite: bool = complete_overwrite
+        self.__overwrite_flag: bool = overwrite_flag
 
     def run(self):
 
@@ -26,9 +26,6 @@ class ReloadEngine(AbstractEngine):
         try:
 
             self.__reload_mapping_specification(database, table)
-            self._insert_application_log(Branch.RE_LOAD.name, bancll_name=None,
-                                         dt_business_date=None,
-                                         impacted_table=table)
 
         except Exception as e:
 
@@ -40,6 +37,12 @@ class ReloadEngine(AbstractEngine):
                                          dt_business_date=None,
                                          impacted_table=table,
                                          exception_message=str(e))
+
+        else:
+
+            self._insert_application_log(Branch.RE_LOAD.name, bancll_name=None,
+                                         dt_business_date=None,
+                                         impacted_table=table)
 
     def __reload_mapping_specification(self, database: str, table: str):
 
@@ -58,6 +61,6 @@ class ReloadEngine(AbstractEngine):
         # WHEN input_overwrite_option == False, THE USER WANTS TO JUST FILL THE TABLE WITH NEW DATA
         # SO, ACCORDING TO ABOVE DOCUMENTATION, truncate = true
 
-        jdbc_overwrite_option: bool = not self.__complete_overwrite
+        jdbc_overwrite_option: bool = not self.__overwrite_flag
         specification_df_from_file: DataFrame = self._read_mapping_specification_from_file()
         self._write_to_jdbc(specification_df_from_file, database, table, "overwrite", jdbc_overwrite_option)

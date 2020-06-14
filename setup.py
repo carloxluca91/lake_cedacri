@@ -35,6 +35,6 @@ setup(
     package_data={"src": ["logging.ini"]},
     include_package_data=True,
     cmdclass={'build_py': BuildPy},
-    install_requires=["pyspark>=2.2", "pandas>=0.23", "numpy", 'names', "mysql-connector-python"],
+    install_requires=["pyspark>=2.2", "numpy", "mysql-connector-python"],
     python_requires=">=3.5"
 )
