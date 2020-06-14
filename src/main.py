@@ -7,15 +7,14 @@ if __name__ == "__main__":
     from logging import config
     from typing import List
     from datetime import datetime
-    from src.spark.branch.enum import Branch
+    from src.spark.branch import Branch
     from src.spark.engine.initial_load import InitialLoadEngine
     from src.spark.engine.re_load import ReloadEngine
     from src.spark.engine.source_load import SourceLoadEngine
     from src.spark.time import BUSINESS_DATE_FORMAT, JAVA_TO_PYTHON_FORMAT
 
     # LOGGING CONFIGURATION
-    with open("logging.ini", "r") as f:
-    #with open("src/logging.ini", "r") as f:
+    with open("src/logging.ini", "r") as f:
 
         config.fileConfig(f)
 
@@ -61,7 +60,6 @@ if __name__ == "__main__":
                                     help="wheter or not a complete overwrite of specification table is needed. Default: false if not specified",
                                     required=False)
 
-        # RETRIEVE ARGUMENTS
         (parsed_arguments, unknown_arguments) = re_load_parser.parse_known_args()
         overwrite_flag: bool = parsed_arguments.overwrite_flag
 

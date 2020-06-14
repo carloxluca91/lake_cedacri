@@ -2,7 +2,7 @@ import logging
 
 from pyspark.sql import DataFrame
 from src.spark.engine.abstract import AbstractEngine
-from src.spark.branch.enum import Branch
+from src.spark.branch import Branch
 
 
 class ReloadEngine(AbstractEngine):
@@ -31,8 +31,7 @@ class ReloadEngine(AbstractEngine):
 
             self.__logger.error(f"Unable to overwrite table \'{database}.{table}\'")
             self.__logger.error(f"Message: {str(e)}")
-            self.__logger.exception(e)
-            self._insert_application_log(Branch.INITIAL_LOAD.name,
+            self._insert_application_log(application_branch=Branch.INITIAL_LOAD.name,
                                          bancll_name=None,
                                          dt_business_date=None,
                                          impacted_table=table,
@@ -40,7 +39,8 @@ class ReloadEngine(AbstractEngine):
 
         else:
 
-            self._insert_application_log(Branch.RE_LOAD.name, bancll_name=None,
+            self._insert_application_log(application_branch=Branch.RE_LOAD.name,
+                                         bancll_name=None,
                                          dt_business_date=None,
                                          impacted_table=table)
 

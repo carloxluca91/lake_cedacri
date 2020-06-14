@@ -2,7 +2,7 @@ import logging
 
 from typing import List
 from pyspark.sql import DataFrame
-from src.spark.branch.enum import Branch
+from src.spark.branch import Branch
 from src.spark.engine.abstract import AbstractEngine
 
 
@@ -27,8 +27,7 @@ class InitialLoadEngine(AbstractEngine):
 
             self.__logger.error(f"Unable to save data into table \'{database_to_create}.{table_to_create}\'")
             self.__logger.error(f"Message: {str(e)}")
-            self.__logger.exception(e)
-            self._insert_application_log(Branch.INITIAL_LOAD.value,
+            self._insert_application_log(application_branch=Branch.INITIAL_LOAD.value,
                                          bancll_name=None,
                                          dt_business_date=None,
                                          impacted_table=table_to_create,
@@ -36,7 +35,7 @@ class InitialLoadEngine(AbstractEngine):
 
         else:
 
-            self._insert_application_log(Branch.INITIAL_LOAD.value,
+            self._insert_application_log(application_branch=Branch.INITIAL_LOAD.value,
                                          bancll_name=None,
                                          dt_business_date=None,
                                          impacted_table=table_to_create)

@@ -1,16 +1,14 @@
-from collections import namedtuple
-from typing import List, Set
+from typing import List, Set, Tuple
 
 from pyspark.sql import DataFrame, Row
 from pyspark.sql import functions as f
 
+from src.spark.branch import Branch
 from src.spark.engine.abstract import AbstractEngine
-from src.spark.raw.generator import RawDataGenerator
+from src.spark.engine.generator import RawDataGenerator
 from src.spark.exceptions import *
-from src.spark.types import SPARK_ALLOWED_TYPES
 from src.spark.time import JAVA_TO_PYTHON_FORMAT
-
-ColumnSpecification = namedtuple("ColumnSpecification", ["column_name", "column_type", "column_desc", "date_format", "column_index"])
+from src.spark.types import SPARK_ALLOWED_TYPES
 
 
 class SourceLoadEngine(AbstractEngine):
@@ -28,10 +26,13 @@ class SourceLoadEngine(AbstractEngine):
         mapping_specification_database: str = self._job_properties["spark"]["database"]
         mapping_specification_table_name: str = self._job_properties["spark"]["specification_table_name"]
 
-        if self._table_exists(mapping_specification_database, mapping_specification_database):
+        self.__logger.info(f"Spark target database: \'{mapping_specification_database}\'")
+        self.__logger.info(f"Spark mapping specification table: \'{mapping_specification_table_name}\'")
+
+        if self._table_exists(mapping_specification_database, mapping_specification_table_name):
 
             # FILTER SPECIFICATION TABLE ACCORDING TO PROVIDED BANCLL
-            self.__logger.info(f"Table {mapping_specification_database}.{mapping_specification_table_name} exists. So, trying to read it")
+            self.__logger.info(f"Table \'{mapping_specification_database}\'.\'{mapping_specification_table_name}\' exists. So, trying to read it")
             mapping_specification_df: DataFrame = self._read_from_jdbc(mapping_specification_database, mapping_specification_table_name)
             bancll_specification_rows: List[Row] = mapping_specification_df\
                 .filter(f.col("flusso") == bancll_name)\
@@ -40,29 +41,44 @@ class SourceLoadEngine(AbstractEngine):
             # NO CONFIGURATION FOUND ?
             if len(bancll_specification_rows) == 0:
 
-                self.__logger.error(f"No specification found for BANCLL \"{bancll_name}\"")
+                self.__logger.error(f"No specification found for BANCLL \'{bancll_name}\'")
                 raise UndefinedBANCLLError(bancll_name)
 
-            self.__logger.info(f"Identified {len(bancll_specification_rows)} rows related to BANCLL \"{bancll_name}\"")
-            self.__logger.info(f"Starting to validate specifications stated for BANCLL \"{bancll_name}\"")
+            self.__logger.info(f"Identified {len(bancll_specification_rows)} rows related to BANCLL \'{bancll_name}\'")
+            self.__logger.info(f"Starting to validate specifications stated for BANCLL \'{bancll_name}\'")
 
             self._validate_bancll_specification(bancll_name, bancll_specification_rows)
 
-            self.__logger.info(f"Successfully validated specification for BANCLL \"{bancll_name}\"")
-            column_specifications: List[ColumnSpecification] = list(
-                map(lambda x: ColumnSpecification(x["colonna_rd"],
-                                                  x["tipo_colonna_rd"],
-                                                  x["descrizione_colonna_rd"],
-                                                  x["formato_data"],
-                                                  x["posizione_iniziale"]),
+            self.__logger.info(f"Successfully validated specification for BANCLL \'{bancll_name}\'")
+            raw_actual_table_name: str = set(map(lambda x: x["sorgente_rd"], bancll_specification_rows)).pop()
+            raw_historical_table_name: str = f"{raw_actual_table_name}_h"
+            column_specifications: List[Tuple] = list(
+                map(lambda x: (x["colonna_rd"],
+                               x["tipo_colonna_rd"],
+                               x["descrizione_colonna_rd"],
+                               x["formato_data"],
+                               x["posizione_iniziale"]),
                 bancll_specification_rows))
 
             # SORT THE TUPLES BY 'posizione_iniziale'
             column_specification_sorted = sorted(column_specifications, key=lambda x: x.column_index)
+            raw_dataframe: DataFrame = self.__raw_data_generator.get_raw_dataframe(self._spark_session,
+                                                                                   column_specification_sorted,
+                                                                                   dt_business_date)
 
-            # TODO: raw dataframe generation
+            application_branch: str = Branch.SOURCE_LOAD.value
 
-            self.__logger.info(f"Successfully created  for BANCLL \"{bancll_name}\" with following schema")
+            self._write_to_jdbc(raw_dataframe, mapping_specification_database, raw_actual_table_name, "overwrite")
+            self._insert_application_log(application_branch, bancll_name, dt_business_date, raw_actual_table_name)
+
+            self._write_to_jdbc(raw_dataframe, mapping_specification_database, raw_historical_table_name, "append")
+            self._insert_application_log(application_branch, bancll_name, dt_business_date, raw_historical_table_name)
+
+        else:
+
+            initial_load_branch: str = Branch.INITIAL_LOAD.value
+            self.__logger.warning(f"Table \'{mapping_specification_database}\'.\'{mapping_specification_table_name}\' does not exist yet")
+            self.__logger.warning(f"Thus, no data will be uploaded to JDBC. You should first run \'{initial_load_branch}\' in order to create it")
 
     def _validate_bancll_specification(self, bancll_name, bancll_specification_rows):
 

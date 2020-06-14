@@ -178,6 +178,7 @@ class AbstractEngine(ABC):
 
     def _table_exists(self, database_name: str, table_name: str) -> bool:
 
+        self.__logger.info(f"Checking existence of table \'{database_name}\'.\'{table_name}\'")
         self._mysql_cursor.execute(f"SHOW TABLES IN {database_name}")
 
         # GET LIST OF EXISTING TABLES WITHIN GIVEN DATABASE

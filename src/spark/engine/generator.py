@@ -1,12 +1,14 @@
 import logging
-from datetime import datetime, timedelta
-from typing import List
 
+from datetime import date, datetime, timedelta
 from numpy.random import RandomState
+from typing import List, Tuple
+
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.types import StructField, StructType
+from pyspark.sql.functions import lit
 from src.spark.types import DATA_TYPE_DICT
-from src.spark.engine.source_load import ColumnSpecification
+from src.spark.time import BUSINESS_DATE_FORMAT, JAVA_TO_PYTHON_FORMAT
 
 
 class RawDataGenerator:
@@ -54,16 +56,19 @@ class RawDataGenerator:
         effective_size: int = self.__n_records if size is None else size
         return self.__rng.choice(value_range, size=effective_size, p=weights)
 
-    def get_bancll_raw_dataframe(self, spark_session: SparkSession, column_specifications: List[ColumnSpecification]) -> DataFrame:
+    def get_raw_dataframe(self,
+                          spark_session: SparkSession,
+                          column_specifications: List[Tuple],
+                          dt_business_date: str) -> DataFrame:
 
         raw_data_dict = {}
         raw_data_struct_type: StructType = StructType()
         for (index, column_specification) in enumerate(column_specifications):
 
-            column_name: str = column_specification.column_name.lower()
-            column_desc: str = column_specification.column_desc.lower()
-            column_type: str = column_specification.column_type.lower()
-            column_date_format: str = column_specification.date_format.lower()
+            column_name: str = column_specification[0].lower()
+            column_type: str = column_specification[1].lower()
+            column_desc: str = column_specification[2].lower()
+            column_date_format: str = column_specification[3].lower()
 
             self.__logger.info(f"Processing column # {index} (name: \'{column_name}\', "
                                f"desc: \'{column_desc}\', type: {column_type}, [format: \'{column_date_format}\'])")
@@ -76,8 +81,13 @@ class RawDataGenerator:
             self.__logger.info(f"Successfully added data related to column # {index} (name: \'{column_name}\', "
                                f"desc: \'{column_desc}\', type: {column_type}, [format: \'{column_date_format}\'])")
 
+        business_date_format: str = JAVA_TO_PYTHON_FORMAT[BUSINESS_DATE_FORMAT]
+        business_date_date: date = datetime.strptime(dt_business_date, business_date_format)
         self.__logger.info("Trying to create raw pyspark.sql.DataFrame")
-        raw_dataframe: DataFrame = spark_session.createDataFrame(raw_data_dict, raw_data_struct_type)
+
+        raw_dataframe: DataFrame = spark_session.createDataFrame(raw_data_dict, raw_data_struct_type)\
+            .withColumn("dt_business_date", lit(business_date_date))
+
         self.__logger.info("Successfully created raw pyspark.sql.DataFrame")
         raw_dataframe.printSchema()
         return raw_dataframe
