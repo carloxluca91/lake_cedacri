@@ -2,7 +2,7 @@ import logging
 
 from datetime import date, datetime, timedelta
 from numpy.random import RandomState
-from typing import List, Tuple
+from typing import Any, List, Tuple
 
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.types import StructField, StructType
@@ -36,25 +36,31 @@ class RawDataGenerator:
         self.__COLUMN_DESCRIPTIONS: dict = {
 
             "indice": range(1, self.__n_records + 1),
-            "cod_istituto": self._sample_from_range(self.__cd_istituto_range, weights=self.__cd_istituto_weights),
-            "ndg": self._sample_from_range(self.__ndg_range),
-            "tipo_ndg": self._sample_from_range(self.__tipo_ndg_range, weights=self.__tipo_ndg_weights),
+            "cod_istituto": self._sample_from_range(self.__cd_istituto_range, return_type="str", weights=self.__cd_istituto_weights),
+            "ndg": self._sample_from_range(self.__ndg_range, return_type="int"),
+            "tipo_ndg": self._sample_from_range(self.__tipo_ndg_range, return_type="str", weights=self.__tipo_ndg_weights),
             "data": self._generate_date_or_datetime_list,
             "timestamp": self._generate_date_or_datetime_list,
-            "stato_ndg": self._sample_from_range(self.__stato_ndg_range, weights=self.__stato_ndg_weights)
+            "stato_ndg": self._sample_from_range(self.__stato_ndg_range, return_type="str", weights=self.__stato_ndg_weights)
         }
 
-    def _generate_date_or_datetime_list(self, flag_date: bool, output_date_format: str, size: int = None) -> List[str]:
+    def _generate_date_or_datetime_list(self, output_date_format: str) -> List[str]:
 
-        effective_size: int = self.__n_records if size is None else size
-        random_array = self.__rng.random_sample(effective_size)
-        return list(map(lambda x: x.date().strftime(output_date_format) if flag_date else x.strftime(output_date_format),
+        random_array = self.__rng.random_sample(self.__n_records)
+        return list(map(lambda x: x.strftime(output_date_format),
                         map(lambda y: self.__lower_bound_date + self.__time_delta * y, random_array)))
 
-    def _sample_from_range(self, value_range: List, size: int = None,  weights: List[float] = None):
+    def _sample_from_range(self, value_range: List, return_type: str, weights: List[float] = None):
 
-        effective_size: int = self.__n_records if size is None else size
-        return self.__rng.choice(value_range, size=effective_size, p=weights)
+        sampled_values: List[Any] = self.__rng.choice(value_range, size=self.__n_records, p=weights)
+
+        if return_type == "str":
+
+            return list(map(lambda x: str(x), sampled_values))
+
+        elif return_type == "int":
+
+            return list(map(lambda x: int(x), sampled_values))
 
     def get_raw_dataframe(self,
                           spark_session: SparkSession,
@@ -68,24 +74,35 @@ class RawDataGenerator:
             column_name: str = column_specification[0].lower()
             column_type: str = column_specification[1].lower()
             column_desc: str = column_specification[2].lower()
-            column_date_format: str = column_specification[3].lower()
 
-            self.__logger.info(f"Processing column # {index} (name: \'{column_name}\', "
-                               f"desc: \'{column_desc}\', type: {column_type}, [format: \'{column_date_format}\'])")
+            if column_desc in ["data", "timestamp"]:
 
-            # UPDATE DATA_DICT AND STRUCTTYPE
-            raw_data_dict[column_name] = self.__COLUMN_DESCRIPTIONS[column_desc] if column_desc not in ["data", "timestamp"] else \
-                self.__COLUMN_DESCRIPTIONS[column_desc](column_date_format)
+                column_date_format: str = column_specification[3]
+                self.__logger.info(f"Processing column # {index} (name: \'{column_name}\', desc: \'{column_desc}\', type: \'{column_type}\', "
+                                   f"format: \'{column_date_format}\')")
+
+                raw_data_dict[column_name] = self.__COLUMN_DESCRIPTIONS[column_desc](JAVA_TO_PYTHON_FORMAT[column_date_format])
+
+                self.__logger.info(f"Successfully added data related to column # {index} (name: \'{column_name}\', "
+                                   f"desc: \'{column_desc}\', type: {column_type}, format: \'{column_date_format}\')")
+
+            else:
+
+                self.__logger.info(f"Processing column # {index} (name: \'{column_name}\', desc: \'{column_desc}\', type: \'{column_type}\')")
+
+                raw_data_dict[column_name] = self.__COLUMN_DESCRIPTIONS[column_desc]
+
+                self.__logger.info(f"Successfully added data related to column # {index} (name: \'{column_name}\', desc: \'{column_desc}\', "
+                                   f"type: \'{column_type}\'")
+
             raw_data_struct_type = raw_data_struct_type.add(StructField(column_name, DATA_TYPE_DICT[column_type]))
 
-            self.__logger.info(f"Successfully added data related to column # {index} (name: \'{column_name}\', "
-                               f"desc: \'{column_desc}\', type: {column_type}, [format: \'{column_date_format}\'])")
-
+        raw_data_tuple_list: List[Tuple] = [tuple(raw_data_dict[key][i] for key in list(raw_data_dict.keys())) for i in range(self.__n_records)]
         business_date_format: str = JAVA_TO_PYTHON_FORMAT[BUSINESS_DATE_FORMAT]
-        business_date_date: date = datetime.strptime(dt_business_date, business_date_format)
+        business_date_date: date = datetime.strptime(dt_business_date, business_date_format).date()
         self.__logger.info("Trying to create raw pyspark.sql.DataFrame")
 
-        raw_dataframe: DataFrame = spark_session.createDataFrame(raw_data_dict, raw_data_struct_type)\
+        raw_dataframe: DataFrame = spark_session.createDataFrame(raw_data_tuple_list, raw_data_struct_type)\
             .withColumn("dt_business_date", lit(business_date_date))
 
         self.__logger.info("Successfully created raw pyspark.sql.DataFrame")

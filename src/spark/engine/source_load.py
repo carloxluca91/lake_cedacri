@@ -61,7 +61,7 @@ class SourceLoadEngine(AbstractEngine):
                 bancll_specification_rows))
 
             # SORT THE TUPLES BY 'posizione_iniziale'
-            column_specification_sorted = sorted(column_specifications, key=lambda x: x.column_index)
+            column_specification_sorted = sorted(column_specifications, key=lambda x: x[4])
             raw_dataframe: DataFrame = self.__raw_data_generator.get_raw_dataframe(self._spark_session,
                                                                                    column_specification_sorted,
                                                                                    dt_business_date)
