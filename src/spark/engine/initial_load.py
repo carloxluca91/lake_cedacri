@@ -19,6 +19,7 @@ class InitialLoadEngine(AbstractEngine):
         table_to_create: str = self._job_properties["spark"]["specification_table_name"]
         self.__create_database_if_not_exists(database_to_create)
 
+        # TODO: define higher-order function for reducing verbosity of logging insert
         try:
 
             self.__load_mapping_specification(database_to_create, table_to_create)
@@ -65,7 +66,6 @@ class InitialLoadEngine(AbstractEngine):
     def __load_mapping_specification(self, database_to_use: str, table_to_create: str):
 
         # CHECK IF THE GIVEN TABLE EXISTS WITHIN GIVEN DATABASE
-
         self.__logger.info(f"Table to search (and eventually create) within DB \'{database_to_use}\': \'{table_to_create}\'")
         if not self._table_exists(database_to_use, table_to_create):
 

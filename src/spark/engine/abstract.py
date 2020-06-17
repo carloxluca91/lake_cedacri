@@ -13,6 +13,15 @@ from src.spark.time import BUSINESS_DATE_FORMAT, JAVA_TO_PYTHON_FORMAT
 from typing import List, Tuple, Union
 
 
+def _schema_tree_string(dataframe: DataFrame) -> str:
+
+    schema_json: dict = dataframe.schema.jsonValue()
+    schema_str_list: List[str] = list(map(lambda x: f" |-- {x['name']}: {x['type']} (nullable: {str(x['nullable']).lower()})",
+                                     schema_json["fields"]))
+    schema_str_list.insert(0, "root")
+    return "\n".join(schema_str_list)
+
+
 def from_json_to_struct_type(json_string: str) -> StructType:
 
     import json
@@ -165,7 +174,7 @@ class AbstractEngine(ABC):
 
         self.__logger.info(f"Attempting to load file at path \'{specification_file_path}\' as a pyspark.sql.DataFrame")
 
-        # READ THE FILE USING ACTIVE SPARK_SESSION
+        # READ THE FILE
         specification_df: DataFrame = self._spark_session.read \
             .format("csv") \
             .option("sep", specification_file_sep) \
@@ -173,7 +182,6 @@ class AbstractEngine(ABC):
             .load(specification_file_path, schema=from_json_to_struct_type(specification_file_schema))
 
         self.__logger.info(f"Successfully loaded file at path \'{specification_file_path}\' as a pyspark.sql.DataFrame")
-        specification_df.printSchema()
         return specification_df
 
     def _table_exists(self, database_name: str, table_name: str) -> bool:
@@ -189,6 +197,8 @@ class AbstractEngine(ABC):
         return table_name.lower() in existing_tables
 
     def _write_to_jdbc(self, dataframe: DataFrame, database_name: str, table_name: str, savemode: str, truncate: bool = False):
+
+        self.__logger.info(f"DataFrame schema: \n{_schema_tree_string(dataframe)}")
 
         full_table_name: str = f"{database_name}.{table_name}"
         truncate_option: str = "true" if savemode.lower() == "overwrite" and truncate else "false"

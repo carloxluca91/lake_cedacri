@@ -1,7 +1,7 @@
 import logging
+import random
 
 from datetime import date, datetime, timedelta
-from numpy.random import RandomState
 from typing import Any, List, Tuple
 
 from pyspark.sql import DataFrame, SparkSession
@@ -17,7 +17,6 @@ class RawDataGenerator:
 
         self.__logger = logging.getLogger(__name__)
         self.__n_records: int = n_records
-        self.__rng: RandomState = RandomState(int(datetime.now().timestamp()))
         self.__lower_bound_date: datetime = datetime(1910, 1, 1, 0, 0)
         self.__upper_bound_date: datetime = datetime.now()
         self.__time_delta: timedelta = self.__upper_bound_date - self.__lower_bound_date
@@ -36,31 +35,26 @@ class RawDataGenerator:
         self.__COLUMN_DESCRIPTIONS: dict = {
 
             "indice": range(1, self.__n_records + 1),
-            "cod_istituto": self._sample_from_range(self.__cd_istituto_range, return_type="str", weights=self.__cd_istituto_weights),
-            "ndg": self._sample_from_range(self.__ndg_range, return_type="int"),
-            "tipo_ndg": self._sample_from_range(self.__tipo_ndg_range, return_type="str", weights=self.__tipo_ndg_weights),
+            "cod_istituto": self._sample_from_range(self.__cd_istituto_range, weights=self.__cd_istituto_weights),
+            "ndg": self._sample_from_range(self.__ndg_range),
+            "tipo_ndg": self._sample_from_range(self.__tipo_ndg_range, weights=self.__tipo_ndg_weights),
             "data": self._generate_date_or_datetime_list,
             "timestamp": self._generate_date_or_datetime_list,
-            "stato_ndg": self._sample_from_range(self.__stato_ndg_range, return_type="str", weights=self.__stato_ndg_weights)
+            "stato_ndg": self._sample_from_range(self.__stato_ndg_range, weights=self.__stato_ndg_weights)
         }
+
+        random.seed()
 
     def _generate_date_or_datetime_list(self, output_date_format: str) -> List[str]:
 
-        random_array = self.__rng.random_sample(self.__n_records)
+        random_array = [random.random() for _ in range(self.__n_records)]
         return list(map(lambda x: x.strftime(output_date_format),
-                        map(lambda y: self.__lower_bound_date + self.__time_delta * y, random_array)))
+                        map(lambda y: self.__lower_bound_date + self.__time_delta * y,
+                            random_array)))
 
-    def _sample_from_range(self, value_range: List, return_type: str, weights: List[float] = None):
+    def _sample_from_range(self, value_range: List, weights: List[float] = None) -> List[Any]:
 
-        sampled_values: List[Any] = self.__rng.choice(value_range, size=self.__n_records, p=weights)
-
-        if return_type == "str":
-
-            return list(map(lambda x: str(x), sampled_values))
-
-        elif return_type == "int":
-
-            return list(map(lambda x: int(x), sampled_values))
+        return random.choices(value_range, weights=weights, k=self.__n_records)
 
     def get_raw_dataframe(self,
                           spark_session: SparkSession,
@@ -106,5 +100,4 @@ class RawDataGenerator:
             .withColumn("dt_business_date", lit(business_date_date))
 
         self.__logger.info("Successfully created raw pyspark.sql.DataFrame")
-        raw_dataframe.printSchema()
         return raw_dataframe

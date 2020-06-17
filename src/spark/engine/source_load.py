@@ -67,7 +67,6 @@ class SourceLoadEngine(AbstractEngine):
                                                                                    dt_business_date)
 
             application_branch: str = Branch.SOURCE_LOAD.value
-
             self._write_to_jdbc(raw_dataframe, mapping_specification_database, raw_actual_table_name, "overwrite")
             self._insert_application_log(application_branch, bancll_name, dt_business_date, raw_actual_table_name)
 
