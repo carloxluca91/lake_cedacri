@@ -11,6 +11,25 @@ from src.spark.types import DATA_TYPE_DICT
 from src.spark.time import BUSINESS_DATE_FORMAT, JAVA_TO_PYTHON_FORMAT
 
 
+def _get_random_binaries(n: int, one_probability: float = 0.01) -> List[int]:
+
+    return random.choices([0, 1], weights=[1 - one_probability, one_probability], k=n)
+
+
+def _replace_randomly_with_none(original_data: List[Any], none_probability: float = 0.01) -> List[Any]:
+
+    # CREATE A RANDOM ARRAY OF ZEROS AND ONES, ASSIGNING PICKING PROBABILITIES
+    return list(map(lambda value, probability: value if probability == 0 else None,
+                    original_data,
+                    _get_random_binaries(len(original_data), none_probability)))
+
+
+def _get_random_datetime_format() -> str:
+
+    random_java_format: str = random.choice(list(JAVA_TO_PYTHON_FORMAT.keys()))
+    return JAVA_TO_PYTHON_FORMAT[random_java_format]
+
+
 class RawDataGenerator:
 
     def __init__(self, n_records: int):
@@ -21,16 +40,16 @@ class RawDataGenerator:
         self.__upper_bound_date: datetime = datetime.now()
         self.__time_delta: timedelta = self.__upper_bound_date - self.__lower_bound_date
 
-        self.__cd_istituto_range: List[str] = ["1", "27", "94", "95"]
-        self.__cd_istituto_weights: List[float] = [0.33, 0.01, 0.33, 0.33]
+        self.__cd_istituto_range: List[str] = ["1", "27", "94", "95", None]
+        self.__cd_istituto_weights: List[float] = [0.33, 0.05, 0.33, 0.33, 0.05]
 
         self.__ndg_range: List[str] = list(map(lambda x: str(x), range(270, 5184)))
 
-        self.__tipo_ndg_range: List[str] = ["PRIV", "DIP", "CO", "CODIP"]
-        self.__tipo_ndg_weights: List[float] = [0.50, 0.01, 0.48, 0.01]
+        self.__tipo_ndg_range: List[str] = ["PRIV", "DIP", "CO", "CODIP", None]
+        self.__tipo_ndg_weights: List[float] = [0.50, 0.04, 0.48, 0.04, 0.02]
 
-        self.__stato_ndg_range: List[str] = ["ATTIVO", "NON ATTIVO", "SOSPESO"]
-        self.__stato_ndg_weights: List[float] = [0.95, 0.04, 0.01]
+        self.__stato_ndg_range: List[str] = ["ATTIVO", "NON ATTIVO", "SOSPESO", None]
+        self.__stato_ndg_weights: List[float] = [0.95, 0.02, 0.02, 0.01]
 
         self.__COLUMN_DESCRIPTIONS: dict = {
 
@@ -47,10 +66,21 @@ class RawDataGenerator:
 
     def _generate_date_or_datetime_list(self, output_date_format: str) -> List[str]:
 
+        # FIRST GENERATE PURE RANDOM DATETIMES
         random_array = [random.random() for _ in range(self.__n_records)]
-        return list(map(lambda x: x.strftime(output_date_format),
-                        map(lambda y: self.__lower_bound_date + self.__time_delta * y,
-                            random_array)))
+        initial_list_of_datetimes: List[datetime] = list(map(lambda x: self.__lower_bound_date + self.__time_delta * x, random_array))
+
+        # COMPUTE PROBABILITIES OF USING A DIFFERENT OUTPUT FORMAT
+        use_randomic_format_probabilities: List[int] = _get_random_binaries(len(initial_list_of_datetimes))
+
+        # FORMAT ORIGINAL PURE RANDOM DATETIMES
+        list_of_datetimes_with_different_formats: List[str] = \
+            list(map(lambda x, y: x.strftime(output_date_format) if y == 0 else x.strftime(_get_random_datetime_format()),
+                     initial_list_of_datetimes,
+                     use_randomic_format_probabilities))
+
+        # AND GET THEM DIRTY WITH SOME NONE
+        return _replace_randomly_with_none(list_of_datetimes_with_different_formats)
 
     def _sample_from_range(self, value_range: List, weights: List[float] = None) -> List[Any]:
 

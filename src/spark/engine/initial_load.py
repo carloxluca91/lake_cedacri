@@ -1,6 +1,7 @@
 import logging
 
-from typing import List
+from functools import partial
+from typing import Callable, List
 from pyspark.sql import DataFrame
 from src.spark.branch import Branch
 from src.spark.engine.abstract import AbstractEngine
@@ -18,8 +19,12 @@ class InitialLoadEngine(AbstractEngine):
         database_to_create: str = self._job_properties["spark"]["database"]
         table_to_create: str = self._job_properties["spark"]["specification_table_name"]
         self.__create_database_if_not_exists(database_to_create)
+        insert_application_log: Callable = partial(self._insert_application_log,
+            application_branch=Branch.INITIAL_LOAD.value,
+            bancll_name=None,
+            dt_business_date=None,
+            impacted_table=table_to_create)
 
-        # TODO: define higher-order function for reducing verbosity of logging insert
         try:
 
             self.__load_mapping_specification(database_to_create, table_to_create)
@@ -28,18 +33,11 @@ class InitialLoadEngine(AbstractEngine):
 
             self.__logger.error(f"Unable to save data into table \'{database_to_create}.{table_to_create}\'")
             self.__logger.error(f"Message: {str(e)}")
-            self._insert_application_log(application_branch=Branch.INITIAL_LOAD.value,
-                                         bancll_name=None,
-                                         dt_business_date=None,
-                                         impacted_table=table_to_create,
-                                         exception_message=str(e))
+            insert_application_log(exception_message=repr(e))
 
         else:
 
-            self._insert_application_log(application_branch=Branch.INITIAL_LOAD.value,
-                                         bancll_name=None,
-                                         dt_business_date=None,
-                                         impacted_table=table_to_create)
+            insert_application_log()
 
     def __create_database_if_not_exists(self, database_to_create: str):
 

@@ -114,11 +114,10 @@ class AbstractEngine(ABC):
     def _insert_application_log(self, application_branch: str,
                                 bancll_name: Union[str, None],
                                 dt_business_date: Union[str, None],
-                                impacted_table: str,
+                                impacted_table: Union[str, None],
                                 exception_message: Union[str, None] = None):
 
         spark_context: SparkContext = self._spark_session.sparkContext
-
         business_date_format: str = JAVA_TO_PYTHON_FORMAT[BUSINESS_DATE_FORMAT]
         dt_business_date: date = datetime.strptime(dt_business_date, business_date_format).date() if dt_business_date is not None else None
 
@@ -128,10 +127,10 @@ class AbstractEngine(ABC):
             application_branch,
             datetime.fromtimestamp(spark_context.startTime / 1000),
             datetime.now(),
-            bancll_name if bancll_name is not None else None,
-            dt_business_date if dt_business_date is not None else None,
+            bancll_name,
+            dt_business_date,
             impacted_table,
-            exception_message if exception_message is not None else None,
+            exception_message,
             -1 if exception_message is not None else 0,
             "FAILED" if exception_message is not None else "SUCCESSED")]
 

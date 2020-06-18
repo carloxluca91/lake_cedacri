@@ -1,4 +1,5 @@
-from typing import List, Set, Tuple
+from functools import partial
+from typing import Callable, List, Set, Tuple
 
 from pyspark.sql import DataFrame, Row
 from pyspark.sql import functions as f
@@ -23,61 +24,86 @@ class SourceLoadEngine(AbstractEngine):
 
     def run(self, bancll_name: str, dt_business_date: str):
 
-        mapping_specification_database: str = self._job_properties["spark"]["database"]
-        mapping_specification_table_name: str = self._job_properties["spark"]["specification_table_name"]
+        target_database: str = self._job_properties["spark"]["database"]
+        specification_table: str = self._job_properties["spark"]["specification_table_name"]
 
-        self.__logger.info(f"Spark target database: \'{mapping_specification_database}\'")
-        self.__logger.info(f"Spark mapping specification table: \'{mapping_specification_table_name}\'")
+        self.__logger.info(f"Spark target database: \'{target_database}\'")
+        self.__logger.info(f"Spark mapping specification table: \'{specification_table}\'")
 
-        if self._table_exists(mapping_specification_database, mapping_specification_table_name):
+        if self._table_exists(target_database, specification_table):
 
-            # FILTER SPECIFICATION TABLE ACCORDING TO PROVIDED BANCLL
-            self.__logger.info(f"Table \'{mapping_specification_database}\'.\'{mapping_specification_table_name}\' exists. So, trying to read it")
-            mapping_specification_df: DataFrame = self._read_from_jdbc(mapping_specification_database, mapping_specification_table_name)
-            bancll_specification_rows: List[Row] = mapping_specification_df\
-                .filter(f.col("flusso") == bancll_name)\
-                .collect()
+            # PARTIAL FUNCTION FOR MORE AGILE LOGGING
+            insert_application_log: Callable = partial(self._insert_application_log,
+                application_branch=Branch.SOURCE_LOAD.value,
+                bancll_name=bancll_name,
+                dt_business_date=dt_business_date)
 
-            # NO CONFIGURATION FOUND ?
-            if len(bancll_specification_rows) == 0:
+            try:
 
-                self.__logger.error(f"No specification found for BANCLL \'{bancll_name}\'")
-                raise UndefinedBANCLLError(bancll_name)
+                # FILTER SPECIFICATION TABLE ACCORDING TO PROVIDED BANCLL
+                self.__logger.info(f"Table \'{target_database}\'.\'{specification_table}\' exists. So, trying to read it")
+                bancll_specification_rows: List[Row] = self._read_from_jdbc(target_database, specification_table)\
+                    .filter(f.col("flusso") == bancll_name)\
+                    .collect()
 
-            self.__logger.info(f"Identified {len(bancll_specification_rows)} rows related to BANCLL \'{bancll_name}\'")
-            self.__logger.info(f"Starting to validate specifications stated for BANCLL \'{bancll_name}\'")
+                # CHECK IF SOME CONFIGURATION CAN BE FOUND
+                if len(bancll_specification_rows) == 0:
 
-            self._validate_bancll_specification(bancll_name, bancll_specification_rows)
+                    self.__logger.error(f"No specification found for BANCLL \'{bancll_name}\'")
+                    raise UndefinedBANCLLError(bancll_name)
 
-            self.__logger.info(f"Successfully validated specification for BANCLL \'{bancll_name}\'")
-            raw_actual_table_name: str = set(map(lambda x: x["sorgente_rd"], bancll_specification_rows)).pop()
-            raw_historical_table_name: str = f"{raw_actual_table_name}_h"
-            column_specifications: List[Tuple] = list(
-                map(lambda x: (x["colonna_rd"],
-                               x["tipo_colonna_rd"],
-                               x["descrizione_colonna_rd"],
-                               x["formato_data"],
-                               x["posizione_iniziale"]),
-                bancll_specification_rows))
+                self.__logger.info(f"Identified {len(bancll_specification_rows)} rows related to BANCLL \'{bancll_name}\'")
+                self.__logger.info(f"Starting to validate specifications stated for BANCLL \'{bancll_name}\'")
 
-            # SORT THE TUPLES BY 'posizione_iniziale'
-            column_specification_sorted = sorted(column_specifications, key=lambda x: x[4])
-            raw_dataframe: DataFrame = self.__raw_data_generator.get_raw_dataframe(self._spark_session,
-                                                                                   column_specification_sorted,
-                                                                                   dt_business_date)
+                # VALIDATION OF BANCLL SPECIFICATION
+                self._validate_bancll_specification(bancll_name, bancll_specification_rows)
 
-            application_branch: str = Branch.SOURCE_LOAD.value
-            self._write_to_jdbc(raw_dataframe, mapping_specification_database, raw_actual_table_name, "overwrite")
-            self._insert_application_log(application_branch, bancll_name, dt_business_date, raw_actual_table_name)
+                self.__logger.info(f"Successfully validated specification for BANCLL \'{bancll_name}\'")
+                raw_actual_table_name: str = set(map(lambda x: x["sorgente_rd"], bancll_specification_rows)).pop()
+                raw_historical_table_name: str = f"{raw_actual_table_name}_h"
+                column_specifications: List[Tuple] = list(map(lambda x: (x["colonna_rd"],
+                                                                         x["tipo_colonna_rd"],
+                                                                         x["descrizione_colonna_rd"],
+                                                                         x["formato_data"],
+                                                                         x["posizione_iniziale"]),
+                                                              bancll_specification_rows))
 
-            self._write_to_jdbc(raw_dataframe, mapping_specification_database, raw_historical_table_name, "append")
-            self._insert_application_log(application_branch, bancll_name, dt_business_date, raw_historical_table_name)
+                # SORT THE TUPLES BY 'posizione_iniziale' AND CREATE RELATED DATAFRAME
+                raw_dataframe: DataFrame = self.__raw_data_generator\
+                    .get_raw_dataframe(self._spark_session,
+                                       sorted(column_specifications, key=lambda x: x[4]),
+                                       dt_business_date)
+
+                self._try_to_write_to_jdbc(raw_dataframe, target_database, raw_actual_table_name, "overwrite", insert_application_log)
+                self._try_to_write_to_jdbc(raw_dataframe, target_database, raw_historical_table_name, "append", insert_application_log)
+
+            except Exception as e:
+
+                self.__logger.error(f"Got an error while trying to create data for BANCLL \'{bancll_name}\', dt_business_date \'{dt_business_date}\'")
+                self.__logger.error(f"Message: {str(e)}")
+                insert_application_log(impacted_table=None, exception_message=repr(e))
 
         else:
 
             initial_load_branch: str = Branch.INITIAL_LOAD.value
-            self.__logger.warning(f"Table \'{mapping_specification_database}\'.\'{mapping_specification_table_name}\' does not exist yet")
-            self.__logger.warning(f"Thus, no data will be uploaded to JDBC. You should first run \'{initial_load_branch}\' in order to create it")
+            self.__logger.warning(f"Table \'{target_database}\'.\'{specification_table}\' does not exist yet")
+            self.__logger.warning(f"Thus, no data will be uploaded. You should first run \'{initial_load_branch}\' branch")
+
+    def _try_to_write_to_jdbc(self, dataframe: DataFrame, target_database: str, target_table: str, savemode: str, insert_log_record: Callable):
+
+        try:
+
+            self._write_to_jdbc(dataframe, target_database, target_table, savemode)
+
+        except Exception as e:
+
+            self.__logger.error(f"Got an error while trying to load data for table \'{target_database}\'.\'{target_table}\'")
+            self.__logger.error(f"Message: {str(e)}")
+            insert_log_record(impacted_table=target_table, exception_message=repr(e))
+
+        else:
+
+            insert_log_record(impacted_table=target_table)
 
     def _validate_bancll_specification(self, bancll_name, bancll_specification_rows):
 
