@@ -1,5 +1,9 @@
 import logging
 
+from datetime import datetime
+from functools import partial
+from typing import Callable
+from pyspark.sql.functions import lit
 from pyspark.sql import DataFrame
 from src.spark.engine.abstract import AbstractEngine
 from src.spark.branch import Branch
@@ -9,11 +13,6 @@ class ReloadEngine(AbstractEngine):
 
     def __init__(self, overwrite_flag: bool, job_ini_file: str):
 
-        """
-        :param overwrite_flag: flag to control how to reload mapping_specification table.
-        :param job_ini_file: .ini file holding Spark job useful information
-        """
-
         super().__init__(job_ini_file)
         self.__logger = logging.getLogger(__name__)
         self.__overwrite_flag: bool = overwrite_flag
@@ -21,30 +20,31 @@ class ReloadEngine(AbstractEngine):
     def run(self):
 
         database: str = self._job_properties["spark"]["database"]
-        table: str = self._job_properties["spark"]["specification_table_name"]
+        specification_table: str = self._job_properties["spark"]["specification_table_name"]
+        specification_historical_table: str = self._job_properties["spark"]["specification_historical_table_name"]
+        insert_reload_log_record: Callable = partial(
+            self._insert_application_log,
+            application_branch=Branch.RE_LOAD.value,
+            bancll_name=None,
+            dt_business_date=None)
 
         try:
 
-            self.__reload_mapping_specification(database, table)
+            self.__reload_mapping_specification(database, specification_table, specification_historical_table)
 
         except Exception as e:
 
-            self.__logger.error(f"Unable to overwrite table \'{database}.{table}\'")
-            self.__logger.error(f"Message: {str(e)}")
-            self._insert_application_log(application_branch=Branch.INITIAL_LOAD.name,
-                                         bancll_name=None,
-                                         dt_business_date=None,
-                                         impacted_table=table,
-                                         exception_message=str(e))
+            self.__logger.error(f"Unable to overwrite table \'{database}.{specification_table}\'")
+            self.__logger.error(f"Message: {repr(e)}")
+            insert_reload_log_record(impacted_table=specification_table, exception_message=repr(e))
+            insert_reload_log_record(impacted_table=specification_historical_table, exception_message=repr(e))
 
         else:
 
-            self._insert_application_log(application_branch=Branch.RE_LOAD.name,
-                                         bancll_name=None,
-                                         dt_business_date=None,
-                                         impacted_table=table)
+            insert_reload_log_record(impacted_table=specification_table)
+            insert_reload_log_record(impacted_table=specification_historical_table)
 
-    def __reload_mapping_specification(self, database: str, table: str):
+    def __reload_mapping_specification(self, database: str, specification_actual_table: str, specification_historical_table: str):
 
         """
         https://spark.apache.org/docs/2.2.3/sql-programming-guide.html#jdbc-to-other-databases
@@ -62,5 +62,14 @@ class ReloadEngine(AbstractEngine):
         # SO, ACCORDING TO ABOVE DOCUMENTATION, truncate = true
 
         jdbc_overwrite_option: bool = not self.__overwrite_flag
-        specification_df_from_file: DataFrame = self._read_mapping_specification_from_file()
-        self._write_to_jdbc(specification_df_from_file, database, table, "overwrite", jdbc_overwrite_option)
+        date_time_now: datetime = datetime.now()
+
+        # READ OLD SPECIFICATIONS AND INSERT THEM INTO THE HISTORICAL SPECIFICATIONS
+        old_specification_df: DataFrame = self._read_from_jdbc(database, specification_actual_table)\
+            .withColumn("ts_fine_validita", lit(date_time_now))\
+            .withColumn("dt_fine_validita", lit(date_time_now.date()))
+        self._write_to_jdbc(old_specification_df, database, specification_historical_table, "append")
+
+        # OVERWRITE OLD SPECIFICATIONS
+        new_specification_df: DataFrame = self._read_mapping_specification_from_file()
+        self._write_to_jdbc(new_specification_df, database, specification_actual_table, "overwrite", jdbc_overwrite_option)

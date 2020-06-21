@@ -19,7 +19,7 @@ class InitialLoadEngine(AbstractEngine):
         database_to_create: str = self._job_properties["spark"]["database"]
         table_to_create: str = self._job_properties["spark"]["specification_table_name"]
         self.__create_database_if_not_exists(database_to_create)
-        insert_application_log: Callable = partial(self._insert_application_log,
+        insert_initial_load_log: Callable = partial(self._insert_application_log,
             application_branch=Branch.INITIAL_LOAD.value,
             bancll_name=None,
             dt_business_date=None,
@@ -32,12 +32,12 @@ class InitialLoadEngine(AbstractEngine):
         except Exception as e:
 
             self.__logger.error(f"Unable to save data into table \'{database_to_create}.{table_to_create}\'")
-            self.__logger.error(f"Message: {str(e)}")
-            insert_application_log(exception_message=repr(e))
+            self.__logger.error(f"Message: {repr(e)}")
+            insert_initial_load_log(exception_message=repr(e))
 
         else:
 
-            insert_application_log()
+            insert_initial_load_log()
 
     def __create_database_if_not_exists(self, database_to_create: str):
 

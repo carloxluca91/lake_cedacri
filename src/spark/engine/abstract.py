@@ -6,6 +6,7 @@ import mysql.connector
 from abc import ABC
 from datetime import date, datetime
 from pyspark import SparkContext
+from pyspark.sql.functions import lit
 from pyspark.sql import DataFrame, DataFrameReader, SparkSession
 from pyspark.sql.types import StructField, StructType
 from src.spark.types import DATA_TYPE_DICT
@@ -19,6 +20,8 @@ def _schema_tree_string(dataframe: DataFrame) -> str:
     schema_str_list: List[str] = list(map(lambda x: f" |-- {x['name']}: {x['type']} (nullable: {str(x['nullable']).lower()})",
                                      schema_json["fields"]))
     schema_str_list.insert(0, "root")
+    schema_str_list.append("\n")
+
     return "\n".join(schema_str_list)
 
 
@@ -181,7 +184,15 @@ class AbstractEngine(ABC):
             .load(specification_file_path, schema=from_json_to_struct_type(specification_file_schema))
 
         self.__logger.info(f"Successfully loaded file at path \'{specification_file_path}\' as a pyspark.sql.DataFrame")
-        return specification_df
+        self.__logger.info(f"Dataframe original schema (provided): \n{_schema_tree_string(specification_df)}")
+
+        datetime_now: datetime = datetime.now()
+        specification_df_with_validita: DataFrame = specification_df\
+            .withColumn("ts_inizio_validita", lit(datetime_now))\
+            .withColumn("dt_inizio_validita", lit(datetime_now.date()))
+
+        self.__logger.info(f"Dataframe enriched schema: \n{_schema_tree_string(specification_df_with_validita)}")
+        return specification_df_with_validita
 
     def _table_exists(self, database_name: str, table_name: str) -> bool:
 
@@ -197,7 +208,7 @@ class AbstractEngine(ABC):
 
     def _write_to_jdbc(self, dataframe: DataFrame, database_name: str, table_name: str, savemode: str, truncate: bool = False):
 
-        self.__logger.info(f"DataFrame schema: \n{_schema_tree_string(dataframe)}")
+        self.__logger.info(f"DataFrame to be written has schema: \n{_schema_tree_string(dataframe)}")
 
         full_table_name: str = f"{database_name}.{table_name}"
         truncate_option: str = "true" if savemode.lower() == "overwrite" and truncate else "false"

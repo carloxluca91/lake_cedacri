@@ -33,7 +33,8 @@ class SourceLoadEngine(AbstractEngine):
         if self._table_exists(target_database, specification_table):
 
             # PARTIAL FUNCTION FOR MORE AGILE LOGGING
-            insert_application_log: Callable = partial(self._insert_application_log,
+            insert_application_log: Callable = partial(
+                self._insert_application_log,
                 application_branch=Branch.SOURCE_LOAD.value,
                 bancll_name=bancll_name,
                 dt_business_date=dt_business_date)
