@@ -19,7 +19,7 @@ def _schema_tree_string(dataframe: DataFrame) -> str:
     schema_json: dict = dataframe.schema.jsonValue()
     schema_str_list: List[str] = list(map(lambda x: f" |-- {x['name']}: {x['type']} (nullable: {str(x['nullable']).lower()})",
                                      schema_json["fields"]))
-    schema_str_list.insert(0, "root")
+    schema_str_list.insert(0, "\nroot")
     schema_str_list.append("\n")
 
     return "\n".join(schema_str_list)

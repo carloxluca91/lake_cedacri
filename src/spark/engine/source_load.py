@@ -1,5 +1,5 @@
 from functools import partial
-from typing import Callable, List, Set, Tuple
+from typing import Callable, Tuple
 
 from pyspark.sql import DataFrame, Row
 from pyspark.sql import functions as f
@@ -75,14 +75,14 @@ class SourceLoadEngine(AbstractEngine):
                                        sorted(column_specifications, key=lambda x: x[4]),
                                        dt_business_date)
 
-                self._try_to_write_to_jdbc(raw_dataframe, target_database, raw_actual_table_name, "overwrite", insert_application_log)
                 self._try_to_write_to_jdbc(raw_dataframe, target_database, raw_historical_table_name, "append", insert_application_log)
+                self._try_to_write_to_jdbc(raw_dataframe, target_database, raw_actual_table_name, "overwrite", insert_application_log)
 
             except Exception as e:
 
                 self.__logger.error(f"Got an error while trying to create data for BANCLL \'{bancll_name}\', dt_business_date \'{dt_business_date}\'")
                 self.__logger.error(f"Message: {str(e)}")
-                insert_application_log(impacted_table=None, exception_message=repr(e))
+                insert_application_log(impacted_table=None, exception_message=str(e))
 
         else:
 
@@ -99,7 +99,7 @@ class SourceLoadEngine(AbstractEngine):
         except Exception as e:
 
             self.__logger.error(f"Got an error while trying to load data for table \'{target_database}\'.\'{target_table}\'")
-            self.__logger.error(f"Message: {str(e)}")
+            self.__logger.error(f"Message: {repr(e)}")
             insert_log_record(impacted_table=target_table, exception_message=repr(e))
 
         else:
