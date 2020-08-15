@@ -9,6 +9,8 @@ JAVA_TO_PYTHON_FORMAT = {
     "dd_MM_yyyy": "%d_%m_%Y",
 
     "yyyy-MM-dd HH:mm:ss": "%Y-%m-%d %H:%M:%S",
+    "dd/MM/yyyy HH:mm:ss": "%d/%m/%Y %H:%M:%S",
+    "dd_MM_yyyy HH:mm:ss": "%d_%m_%Y %H:%M:%S"
 }
 
 BUSINESS_DATE_FORMAT: str = "yyyy-MM-dd"

@@ -27,8 +27,8 @@ class SourceLoadEngine(AbstractEngine):
         target_database: str = self._job_properties["spark"]["database"]
         specification_table: str = self._job_properties["spark"]["specification_table_name"]
 
-        self.__logger.info(f"Spark target database: \'{target_database}\'")
-        self.__logger.info(f"Spark mapping specification table: \'{specification_table}\'")
+        self.__logger.info(f"Spark target database: '{target_database}'")
+        self.__logger.info(f"Spark mapping specification table: '{specification_table}'")
 
         if self._table_exists(target_database, specification_table):
 
@@ -42,7 +42,7 @@ class SourceLoadEngine(AbstractEngine):
             try:
 
                 # FILTER SPECIFICATION TABLE ACCORDING TO PROVIDED BANCLL
-                self.__logger.info(f"Table \'{target_database}\'.\'{specification_table}\' exists. So, trying to read it")
+                self.__logger.info(f"Table '{target_database}'.'{specification_table}' exists. So, trying to read it")
                 bancll_specification_rows: List[Row] = self._read_from_jdbc(target_database, specification_table)\
                     .filter(f.col("flusso") == bancll_name)\
                     .collect()
@@ -50,16 +50,16 @@ class SourceLoadEngine(AbstractEngine):
                 # CHECK IF SOME CONFIGURATION CAN BE FOUND
                 if len(bancll_specification_rows) == 0:
 
-                    self.__logger.error(f"No specification found for BANCLL \'{bancll_name}\'")
+                    self.__logger.error(f"No specification found for BANCLL '{bancll_name}'")
                     raise UndefinedBANCLLError(bancll_name)
 
-                self.__logger.info(f"Identified {len(bancll_specification_rows)} rows related to BANCLL \'{bancll_name}\'")
-                self.__logger.info(f"Starting to validate specifications stated for BANCLL \'{bancll_name}\'")
+                self.__logger.info(f"Identified {len(bancll_specification_rows)} rows related to BANCLL '{bancll_name}'")
+                self.__logger.info(f"Starting to validate specifications stated for BANCLL '{bancll_name}'")
 
                 # VALIDATION OF BANCLL SPECIFICATION
                 self._validate_bancll_specification(bancll_name, bancll_specification_rows)
 
-                self.__logger.info(f"Successfully validated specification for BANCLL \'{bancll_name}\'")
+                self.__logger.info(f"Successfully validated specification for BANCLL '{bancll_name}'")
                 raw_actual_table_name: str = set(map(lambda x: x["sorgente_rd"], bancll_specification_rows)).pop()
                 raw_historical_table_name: str = f"{raw_actual_table_name}_h"
                 column_specifications: List[Tuple] = list(map(lambda x: (x["colonna_rd"],
@@ -80,15 +80,14 @@ class SourceLoadEngine(AbstractEngine):
 
             except Exception as e:
 
-                self.__logger.error(f"Got an error while trying to create data for BANCLL \'{bancll_name}\', dt_business_date \'{dt_business_date}\'")
-                self.__logger.error(f"Message: {str(e)}")
+                self.__logger.exception(f"Got an error while trying to create data for BANCLL '{bancll_name}', dt_business_date '{dt_business_date}'")
                 insert_application_log(impacted_table=None, exception_message=str(e))
 
         else:
 
             initial_load_branch: str = Branch.INITIAL_LOAD.value
-            self.__logger.warning(f"Table \'{target_database}\'.\'{specification_table}\' does not exist yet")
-            self.__logger.warning(f"Thus, no data will be uploaded. You should first run \'{initial_load_branch}\' branch")
+            self.__logger.warning(f"Table '{target_database}'.'{specification_table}' does not exist yet")
+            self.__logger.warning(f"Thus, no data will be uploaded. You should first run '{initial_load_branch}' branch")
 
     def _try_to_write_to_jdbc(self, dataframe: DataFrame, target_database: str, target_table: str, savemode: str, insert_log_record: Callable):
 
@@ -98,8 +97,7 @@ class SourceLoadEngine(AbstractEngine):
 
         except Exception as e:
 
-            self.__logger.error(f"Got an error while trying to load data for table \'{target_database}\'.\'{target_table}\'")
-            self.__logger.error(f"Message: {repr(e)}")
+            self.__logger.exception(f"Got an error while trying to load data for table '{target_database}'.'{target_table}'")
             insert_log_record(impacted_table=target_table, exception_message=repr(e))
 
         else:

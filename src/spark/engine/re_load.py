@@ -1,12 +1,13 @@
 import logging
-
 from datetime import datetime
 from functools import partial
 from typing import Callable
-from pyspark.sql.functions import lit
+
 from pyspark.sql import DataFrame
-from src.spark.engine.abstract import AbstractEngine
+from pyspark.sql.functions import lit
+
 from src.spark.branch import Branch
+from src.spark.engine.abstract import AbstractEngine
 
 
 class ReloadEngine(AbstractEngine):
@@ -34,8 +35,7 @@ class ReloadEngine(AbstractEngine):
 
         except Exception as e:
 
-            self.__logger.error(f"Unable to overwrite table \'{database}.{specification_table}\'")
-            self.__logger.error(f"Message: {repr(e)}")
+            self.__logger.exception(f"Unable to overwrite table '{database}.{specification_table}'")
             insert_reload_log_record(impacted_table=specification_table, exception_message=repr(e))
             insert_reload_log_record(impacted_table=specification_historical_table, exception_message=repr(e))
 
@@ -68,8 +68,17 @@ class ReloadEngine(AbstractEngine):
         old_specification_df: DataFrame = self._read_from_jdbc(database, specification_actual_table)\
             .withColumn("ts_fine_validita", lit(date_time_now))\
             .withColumn("dt_fine_validita", lit(date_time_now.date()))
+
         self._write_to_jdbc(old_specification_df, database, specification_historical_table, "append")
 
+        old_version_number: float = old_specification_df.selectExpr("versione")\
+            .distinct()\
+            .collect()[0][0]
+
+        new_version_number: float = old_version_number + 0.1
+        self.__logger.info(f"Updating version number from {old_version_number:.1f} to {new_version_number:.1f}")
+
         # OVERWRITE OLD SPECIFICATIONS
-        new_specification_df: DataFrame = self._read_mapping_specification_from_file()
+        new_specification_df: DataFrame = self._read_mapping_specification_from_file()\
+            .withColumn("versione", lit(new_version_number).cast("double"))
         self._write_to_jdbc(new_specification_df, database, specification_actual_table, "overwrite", jdbc_overwrite_option)

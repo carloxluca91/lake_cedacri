@@ -42,8 +42,8 @@ if __name__ == "__main__":
     branch_name: str = parsed_arguments.branch_name.upper()
     spark_job_ini_file: str = parsed_arguments.spark_job_ini_file
 
-    logger.info(f"Parsed branch name: {branch_name}")
-    logger.info(f"Provided spark job file: {spark_job_ini_file}")
+    logger.info(f"Parsed branch name: '{branch_name}'")
+    logger.info(f"Provided spark job file: '{spark_job_ini_file}'")
 
     if branch_name == Branch.INITIAL_LOAD.value:
 
@@ -63,7 +63,7 @@ if __name__ == "__main__":
         (parsed_arguments, unknown_arguments) = re_load_parser.parse_known_args()
         overwrite_flag: bool = parsed_arguments.overwrite_flag
 
-        logger.info(f"Complete overwrite flag: {overwrite_flag}")
+        logger.info(f"Complete overwrite flag: '{overwrite_flag}'")
 
         ReloadEngine(overwrite_flag, spark_job_ini_file).run()
 
@@ -106,7 +106,7 @@ if __name__ == "__main__":
         number_of_records: int = parsed_arguments.number_of_records
 
         logger.info(f"Provided {len(bancll_names)} BANCLL(s): {bancll_names}")
-        logger.info(f"Working business date: {input_dt_business_date}")
+        logger.info(f"Working business date: '{input_dt_business_date}'")
         logger.info(f"Number of records: {number_of_records}")
 
         # CHECK THAT BUSINESS DATE IS CORRECT (IF PROVIDED)
@@ -116,7 +116,7 @@ if __name__ == "__main__":
 
         except ValueError:
 
-            raise Exception(f"Invalid business date. Provided \"{input_dt_business_date}\", should follow {business_date_format}") from None
+            raise Exception(f"Invalid business date. Provided '{input_dt_business_date}', should follow '{business_date_format}'") from None
 
         else:
 
@@ -125,8 +125,8 @@ if __name__ == "__main__":
         bancll_loader: SourceLoadEngine = SourceLoadEngine(spark_job_ini_file, number_of_records)
         for (bancll_index, bancll_name) in enumerate(bancll_names):
 
-            logger.info(f"Starting to load raw data for BANCLL # {bancll_index} (\'{bancll_name}\')")
+            logger.info(f"Starting to load raw data for BANCLL # {bancll_index + 1} ('{bancll_name}')")
 
             bancll_loader.run(bancll_name, input_dt_business_date)
 
-            logger.info(f"Successfully loaded data for BANCLL # {bancll_index} (\'{bancll_name}\')")
+            logger.info(f"Successfully loaded data for BANCLL # {bancll_index + 1} ('{bancll_name}')")

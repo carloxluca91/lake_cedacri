@@ -6,7 +6,7 @@ from typing import Any, List, Tuple
 
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.types import StructField, StructType
-from pyspark.sql.functions import lit
+from pyspark.sql.functions import lit, monotonically_increasing_id
 from src.spark.types import DATA_TYPE_DICT
 from src.spark.time import BUSINESS_DATE_FORMAT, JAVA_TO_PYTHON_FORMAT
 
@@ -53,7 +53,6 @@ class RawDataGenerator:
 
         self.__COLUMN_DESCRIPTIONS: dict = {
 
-            "indice": range(1, self.__n_records + 1),
             "cod_istituto": self._sample_from_range(self.__cd_istituto_range, weights=self.__cd_istituto_weights),
             "ndg": self._sample_from_range(self.__ndg_range),
             "tipo_ndg": self._sample_from_range(self.__tipo_ndg_range, weights=self.__tipo_ndg_weights),
@@ -102,22 +101,22 @@ class RawDataGenerator:
             if column_desc in ["data", "timestamp"]:
 
                 column_date_format: str = column_specification[3]
-                self.__logger.info(f"Processing column # {index} (name: \'{column_name}\', desc: \'{column_desc}\', type: \'{column_type}\', "
-                                   f"format: \'{column_date_format}\')")
+                self.__logger.info(f"Processing column # {index} (name: '{column_name}', desc: '{column_desc}', type: '{column_type}', "
+                                   f"format: '{column_date_format}')")
 
                 raw_data_dict[column_name] = self.__COLUMN_DESCRIPTIONS[column_desc](JAVA_TO_PYTHON_FORMAT[column_date_format])
 
-                self.__logger.info(f"Successfully added data related to column # {index} (name: \'{column_name}\', "
-                                   f"desc: \'{column_desc}\', type: {column_type}, format: \'{column_date_format}\')")
+                self.__logger.info(f"Successfully added data related to column # {index} (name: '{column_name}', "
+                                   f"desc: '{column_desc}', type: {column_type}, format: '{column_date_format}')")
 
             else:
 
-                self.__logger.info(f"Processing column # {index} (name: \'{column_name}\', desc: \'{column_desc}\', type: \'{column_type}\')")
+                self.__logger.info(f"Processing column # {index} (name: '{column_name}', desc: '{column_desc}', type: '{column_type}')")
 
                 raw_data_dict[column_name] = self.__COLUMN_DESCRIPTIONS[column_desc]
 
-                self.__logger.info(f"Successfully added data related to column # {index} (name: \'{column_name}\', desc: \'{column_desc}\', "
-                                   f"type: \'{column_type}\'")
+                self.__logger.info(f"Successfully added data related to column # {index} (name: '{column_name}', desc: '{column_desc}', "
+                                   f"type: '{column_type}'")
 
             raw_data_struct_type = raw_data_struct_type.add(StructField(column_name, DATA_TYPE_DICT[column_type]))
 
@@ -127,7 +126,10 @@ class RawDataGenerator:
         self.__logger.info("Trying to create raw pyspark.sql.DataFrame")
 
         raw_dataframe: DataFrame = spark_session.createDataFrame(raw_data_tuple_list, raw_data_struct_type)\
-            .withColumn("dt_business_date", lit(business_date_date))
+            .withColumn("dt_business_date", lit(business_date_date))\
 
+        column_list: List[str] = raw_dataframe.columns
         self.__logger.info("Successfully created raw pyspark.sql.DataFrame")
-        return raw_dataframe
+        return raw_dataframe\
+            .withColumn("row_id", monotonically_increasing_id())\
+            .select(["row_id"] + column_list)

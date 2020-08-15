@@ -1,6 +1,6 @@
 from typing import List, Set, Union
 
-INVALID_SPECIFICATION_STRING = "Invalid specification for BANCLL \'{0}\'"
+INVALID_SPECIFICATION_STRING = "Invalid specification for BANCLL '{0}'"
 
 
 def _prefix(bancll_name):
@@ -10,14 +10,14 @@ def _prefix(bancll_name):
 
 def _wrap_with_single_quotes(strings: Union[List[str], Set[str]]) -> List[str]:
 
-    return list(map(lambda x: f"\'{x}\'", strings))
+    return list(map(lambda x: f"'{x}'", strings))
 
 
 class UndefinedBANCLLError(Exception):
 
     def __init__(self, bancll_name: str):
 
-        self.message = f"Unable to find specification for BANCLL \'{bancll_name}\'"
+        self.message = f"Unable to find specification for BANCLL '{bancll_name}'"
 
     def __str__(self): return self.message
 
