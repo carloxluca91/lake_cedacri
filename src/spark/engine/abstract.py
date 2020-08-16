@@ -74,11 +74,9 @@ class AbstractEngine(ABC):
         jdbc_driver = self._job_properties["jdbc"]["driver"]
         jdbc_use_ssl = self._job_properties["jdbc"]["useSSL"].lower()
 
-        self.__logger.info(f"JDBC (host, port): ('{jdbc_host}', '{jdbc_port}')")
-        self.__logger.info(f"JDBC url: {jdbc_url}")
-        self.__logger.info(f"JDBC (user, password): ('{jdbc_user}', '{jdbc_password}')")
-        self.__logger.info(f"JDBC driver: {jdbc_driver}")
-        self.__logger.info(f"JDBC useSSL: {jdbc_use_ssl}")
+        self.__logger.info(f"JDBC host:port = '{jdbc_host}:{jdbc_port}'")
+        self.__logger.info(f"JDBC url = '{jdbc_url}'. User = '{jdbc_user}'. Password = '{jdbc_password}")
+        self.__logger.info(f"JDBC driver = '{jdbc_driver}'. UseSSL flag = '{jdbc_use_ssl}'")
 
         self._spark_jdbc_options: dict = {
 
@@ -101,9 +99,8 @@ class AbstractEngine(ABC):
 
         # MySQL Python CONNECTOR
         self._mysql_connection: mysql.connector.MySQLConnection = mysql.connector.connect(** self._connector_options)
-        host_port_str: str = f"{self._connector_options['host']}:{str(self._connector_options['port'])}"
-        username_password_str: str = f"({self._connector_options['user']}, {self._connector_options['password']})"
-        self.__logger.info(f"Successfully estabilished connection to {host_port_str} with credentials {username_password_str}")
+        self.__logger.info(f"Successfully estabilished connection to '{self._connector_options['host']}:{str(self._connector_options['port'])}' "
+                           f"with credentials ('{self._connector_options['user']}', '{self._connector_options['password']}'")
 
         # MySQL Python CURSOR (FOR QUERY EXECUTION)
         self._mysql_cursor: mysql.connector.connection.MySQLCursor = self._mysql_connection.cursor()
@@ -204,12 +201,11 @@ class AbstractEngine(ABC):
 
     def _write_to_jdbc(self, dataframe: DataFrame, database_name: str, table_name: str, savemode: str, truncate: bool = False):
 
-        self.__logger.info(f"DataFrame to be written has schema: \n{_schema_tree_string(dataframe)}")
-
         full_table_name: str = f"{database_name}.{table_name}"
         truncate_option: str = "true" if savemode.lower() == "overwrite" and truncate else "false"
-        self.__logger.info(f"Value of 'truncate' option: {truncate_option}")
-        self.__logger.info(f"Starting to insert data into table '{full_table_name}' using savemode '{savemode}'")
+        self.__logger.info(f"Starting to insert data into table '{full_table_name}' using savemode '{savemode}'. "
+                           f"Value of 'truncate' option: {truncate_option}")
+        self.__logger.info(f"DataFrame to be written has schema: \n{_schema_tree_string(dataframe)}")
 
         dataframe.write\
             .format("jdbc")\

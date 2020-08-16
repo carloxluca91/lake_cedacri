@@ -60,7 +60,7 @@ class SourceLoadEngine(AbstractEngine):
                 self._validate_bancll_specification(bancll_name, bancll_specification_rows)
 
                 self.__logger.info(f"Successfully validated specification for BANCLL '{bancll_name}'")
-                raw_actual_table_name: str = set(map(lambda x: x["sorgente_rd"], bancll_specification_rows)).pop()
+                raw_actual_table_name: str = set(map(lambda x: x["sorgente_rd"], bancll_specification_rows)).pop().lower()
                 raw_historical_table_name: str = f"{raw_actual_table_name}_h"
                 column_specifications: List[Tuple] = list(map(lambda x: (x["colonna_rd"],
                                                                          x["tipo_colonna_rd"],

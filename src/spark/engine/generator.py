@@ -11,12 +11,12 @@ from src.spark.types import DATA_TYPE_DICT
 from src.spark.time import BUSINESS_DATE_FORMAT, JAVA_TO_PYTHON_FORMAT
 
 
-def _get_random_binaries(n: int, one_probability: float = 0.01) -> List[int]:
+def _get_random_binaries(n: int, one_probability: float = 0.005) -> List[int]:
 
     return random.choices([0, 1], weights=[1 - one_probability, one_probability], k=n)
 
 
-def _replace_randomly_with_none(original_data: List[Any], none_probability: float = 0.01) -> List[Any]:
+def _replace_randomly_with_none(original_data: List[Any], none_probability: float = 0.005) -> List[Any]:
 
     # CREATE A RANDOM ARRAY OF ZEROS AND ONES, ASSIGNING PICKING PROBABILITIES
     return list(map(lambda value, probability: value if probability == 0 else None,
@@ -128,8 +128,8 @@ class RawDataGenerator:
         raw_dataframe: DataFrame = spark_session.createDataFrame(raw_data_tuple_list, raw_data_struct_type)\
             .withColumn("dt_business_date", lit(business_date_date))\
 
-        column_list: List[str] = raw_dataframe.columns
         self.__logger.info("Successfully created raw pyspark.sql.DataFrame")
         return raw_dataframe\
             .withColumn("row_id", monotonically_increasing_id())\
-            .select(["row_id"] + column_list)
+            .orderBy("row_id")\
+            .select(["row_id"] + raw_dataframe.columns)
