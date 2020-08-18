@@ -1,4 +1,4 @@
-JAVA_TO_PYTHON_FORMAT = {
+PYTHON_FORMAT = {
 
     "yyyy-MM-dd": "%Y-%m-%d",
     "yyyy/MM/dd": "%Y/%m/%d",

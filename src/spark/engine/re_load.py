@@ -27,7 +27,7 @@ class ReloadEngine(AbstractEngine):
             self._insert_application_log,
             application_branch=Branch.RE_LOAD.value,
             bancll_name=None,
-            dt_business_date=None)
+            dt_riferimento=None)
 
         try:
 

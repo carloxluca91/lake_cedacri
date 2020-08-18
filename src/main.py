@@ -11,7 +11,7 @@ if __name__ == "__main__":
     from src.spark.engine.initial_load import InitialLoadEngine
     from src.spark.engine.re_load import ReloadEngine
     from src.spark.engine.source_load import SourceLoadEngine
-    from src.spark.time import BUSINESS_DATE_FORMAT, JAVA_TO_PYTHON_FORMAT
+    from src.spark.time import BUSINESS_DATE_FORMAT, PYTHON_FORMAT
 
     # LOGGING CONFIGURATION
     with open("src/logging.ini", "r") as f:
@@ -81,52 +81,50 @@ if __name__ == "__main__":
                                         required=True)
 
         # OPTION -d, --business--date
-        business_date_format: str = JAVA_TO_PYTHON_FORMAT[BUSINESS_DATE_FORMAT]
-        source_load_parser.add_argument("-d", "--business--date",
+        dt_riferimento_format: str = PYTHON_FORMAT[BUSINESS_DATE_FORMAT]
+        source_load_parser.add_argument("-d", "--dt--riferimento",
                                         type=str,
-                                        dest="dt_business_date",
+                                        dest="dt_riferimento",
                                         metavar="date",
-                                        help=f"dt_business_date to be used for data loading (format {business_date_format})",
+                                        help=f"reference date to be used for data loading (format {dt_riferimento_format})",
                                         required=False,
-                                        default=datetime.now().strftime(business_date_format))
+                                        default=datetime.now().strftime(dt_riferimento_format))
 
         # OPTION -n, --number-of-records
         source_load_parser.add_argument("-n", "--n-records",
                                         type=int,
                                         dest="number_of_records",
                                         metavar="number",
-                                        help="number_of_records to be generated",
+                                        help="number of records to be generated",
                                         required=False,
                                         default=1000)
 
         # RETRIEVE ARGUMENTS
         (parsed_arguments, unknown_arguments) = source_load_parser.parse_known_args()
         bancll_names: List[str] = parsed_arguments.bancll_names
-        input_dt_business_date: str = parsed_arguments.dt_business_date
+        input_dt_riferimento: str = parsed_arguments.dt_riferimento
         number_of_records: int = parsed_arguments.number_of_records
 
         logger.info(f"Provided {len(bancll_names)} BANCLL(s): {bancll_names}")
-        logger.info(f"Working business date: '{input_dt_business_date}'")
+        logger.info(f"Provided data reference date: '{input_dt_riferimento}'")
         logger.info(f"Number of records: {number_of_records}")
 
-        # CHECK THAT BUSINESS DATE IS CORRECT (IF PROVIDED)
+        # CHECK THAT DT_RIFERIMENTO IS CORRECT (IF PROVIDED)
         try:
 
-            datetime.strptime(input_dt_business_date, business_date_format)
+            datetime.strptime(input_dt_riferimento, dt_riferimento_format)
 
         except ValueError:
 
-            raise Exception(f"Invalid business date. Provided '{input_dt_business_date}', should follow '{business_date_format}'") from None
+            raise Exception(f"Invalid reference date. Provided '{input_dt_riferimento}', should follow '{dt_riferimento_format}'") from None
 
         else:
 
-            logger.info("Successfully parsed dt_business_date")
+            logger.info("Successfully parsed dt_riferimento")
 
         bancll_loader: SourceLoadEngine = SourceLoadEngine(spark_job_ini_file, number_of_records)
         for (bancll_index, bancll_name) in enumerate(bancll_names):
 
             logger.info(f"Starting to load raw data for BANCLL # {bancll_index + 1} ('{bancll_name}')")
-
-            bancll_loader.run(bancll_name, input_dt_business_date)
-
+            bancll_loader.run(bancll_name, input_dt_riferimento)
             logger.info(f"Successfully loaded data for BANCLL # {bancll_index + 1} ('{bancll_name}')")

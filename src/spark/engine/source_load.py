@@ -8,7 +8,7 @@ from src.spark.branch import Branch
 from src.spark.engine.abstract import AbstractEngine
 from src.spark.engine.generator import RawDataGenerator
 from src.spark.exceptions import *
-from src.spark.time import JAVA_TO_PYTHON_FORMAT
+from src.spark.time import PYTHON_FORMAT
 from src.spark.types import SPARK_ALLOWED_TYPES
 
 
@@ -22,7 +22,7 @@ class SourceLoadEngine(AbstractEngine):
         self.__logger = logging.getLogger(__name__)
         self.__raw_data_generator: RawDataGenerator = RawDataGenerator(number_of_records)
 
-    def run(self, bancll_name: str, dt_business_date: str):
+    def run(self, bancll_name: str, dt_riferimento: str):
 
         target_database: str = self._job_properties["spark"]["database"]
         specification_table: str = self._job_properties["spark"]["specification_table_name"]
@@ -37,7 +37,7 @@ class SourceLoadEngine(AbstractEngine):
                 self._insert_application_log,
                 application_branch=Branch.SOURCE_LOAD.value,
                 bancll_name=bancll_name,
-                dt_business_date=dt_business_date)
+                dt_riferimento=dt_riferimento)
 
             try:
 
@@ -70,17 +70,17 @@ class SourceLoadEngine(AbstractEngine):
                                                               bancll_specification_rows))
 
                 # SORT THE TUPLES BY 'posizione_iniziale' AND CREATE RELATED DATAFRAME
-                raw_dataframe: DataFrame = self.__raw_data_generator\
+                raw_dataframe: DataFrame = self.__raw_data_generator \
                     .get_raw_dataframe(self._spark_session,
                                        sorted(column_specifications, key=lambda x: x[4]),
-                                       dt_business_date)
+                                       dt_riferimento)
 
                 self._try_to_write_to_jdbc(raw_dataframe, target_database, raw_historical_table_name, "append", insert_application_log)
                 self._try_to_write_to_jdbc(raw_dataframe, target_database, raw_actual_table_name, "overwrite", insert_application_log)
 
             except Exception as e:
 
-                self.__logger.exception(f"Got an error while trying to create data for BANCLL '{bancll_name}', dt_business_date '{dt_business_date}'")
+                self.__logger.exception(f"Got an error while trying to create data for BANCLL '{bancll_name}', reference date '{dt_riferimento}'")
                 insert_application_log(impacted_table=None, exception_message=str(e))
 
         else:
@@ -165,8 +165,8 @@ class SourceLoadEngine(AbstractEngine):
         # [e] ARE ALL DATE_FORMATS CORRECTLY DEFINED ?
         date_formats_set: Set[str] = set(bancll_raw_column_input_formats)
         undefined_formats: List[str] = list(
-            filter(lambda y: JAVA_TO_PYTHON_FORMAT.get(y) is None,
-                filter(lambda x: x is not None, date_formats_set)))
+            filter(lambda y: PYTHON_FORMAT.get(y) is None,
+                   filter(lambda x: x is not None, date_formats_set)))
 
         if len(undefined_formats) > 0:
 

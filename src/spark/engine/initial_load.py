@@ -22,7 +22,7 @@ class InitialLoadEngine(AbstractEngine):
         insert_initial_load_log: Callable = partial(self._insert_application_log,
             application_branch=Branch.INITIAL_LOAD.value,
             bancll_name=None,
-            dt_business_date=None,
+            dt_riferimento=None,
             impacted_table=table_to_create)
 
         try:
@@ -31,7 +31,7 @@ class InitialLoadEngine(AbstractEngine):
 
         except Exception as e:
 
-            self.__logger.exception(f"Unable to save data into table '{database_to_create}.{table_to_create}'")
+            self.__logger.exception(f"Unable to save data into table '{database_to_create}'.'{table_to_create}'")
             insert_initial_load_log(exception_message=repr(e))
 
         else:
@@ -68,7 +68,7 @@ class InitialLoadEngine(AbstractEngine):
         if not self._table_exists(database_to_use, table_to_create):
 
             self.__logger.warning(f"DB '{database_to_use}' does not contain table '{table_to_create}' yet. Attempting to create it now")
-            specification_df_from_file: DataFrame = self._read_mapping_specification_from_file()\
+            specification_df_from_file: DataFrame = self._read_mapping_specification_from_file() \
                 .withColumn("versione", lit(1.0).cast("double"))
 
             self._write_to_jdbc(specification_df_from_file, database_to_use, table_to_create, "overwrite")

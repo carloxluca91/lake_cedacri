@@ -31,7 +31,7 @@ setup(
     url="https://github.com/carloxluca91/lake_cedacri.git",
     author="Luca Carloni",
     author_email="carloni.luca91@gmail.com",
-    packages=find_packages(),
+    packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
     package_data={"src": ["logging.ini"]},
     include_package_data=True,
     cmdclass={'build_py': BuildPy},
