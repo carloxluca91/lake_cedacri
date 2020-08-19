@@ -11,7 +11,7 @@ from pyspark.sql import DataFrame, DataFrameReader, SparkSession
 from pyspark.sql.functions import lit
 from pyspark.sql.types import StructField, StructType
 
-from src.spark.time import BUSINESS_DATE_FORMAT, PYTHON_FORMAT
+from src.spark.time import DT_RIFERIMENTO_DATE, PYTHON_FORMAT
 from src.spark.types import DATA_TYPE_DICT
 
 
@@ -132,7 +132,7 @@ class AbstractEngine(ABC):
                                 exception_message: Union[str, None] = None):
 
         spark_context: SparkContext = self._spark_session.sparkContext
-        business_date_format: str = PYTHON_FORMAT[BUSINESS_DATE_FORMAT]
+        business_date_format: str = PYTHON_FORMAT[DT_RIFERIMENTO_DATE]
         dt_riferimento: date = datetime.strptime(dt_riferimento, business_date_format).date() if dt_riferimento is not None else None
 
         logging_record_tuple_list: List[Tuple] = [(

@@ -8,7 +8,7 @@ from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.types import StructField, StructType
 from pyspark.sql.functions import lit, monotonically_increasing_id
 from src.spark.types import DATA_TYPE_DICT
-from src.spark.time import BUSINESS_DATE_FORMAT, PYTHON_FORMAT
+from src.spark.time import DT_RIFERIMENTO_DATE, PYTHON_FORMAT
 
 
 def _get_random_binaries(n: int, one_probability: float = 0.005) -> List[int]:
@@ -121,16 +121,16 @@ class RawDataGenerator:
             raw_data_struct_type = raw_data_struct_type.add(StructField(column_name, DATA_TYPE_DICT[column_type]))
 
         raw_data_tuple_list: List[Tuple] = [tuple(raw_data_dict[key][i] for key in list(raw_data_dict.keys())) for i in range(self.__n_records)]
-        business_date_date: date = datetime.strptime(dt_riferimento, PYTHON_FORMAT[BUSINESS_DATE_FORMAT]).date()
+        dt_riferimento_date: date = datetime.strptime(dt_riferimento, PYTHON_FORMAT[DT_RIFERIMENTO_DATE]).date()
         self.__logger.info("Trying to create raw pyspark.sql.DataFrame")
 
-        raw_dataframe: DataFrame = spark_session.createDataFrame(raw_data_tuple_list, raw_data_struct_type)\
-            .withColumn("row_id", monotonically_increasing_id())\
-            .withColumn("ts_inserimento", lit(datetime.now()))\
-            .withColumn("dt_inserimento", lit(datetime.now().date()))\
-            .withColumn("dt_riferimento", lit(business_date_date))
+        raw_dataframe: DataFrame = spark_session.createDataFrame(raw_data_tuple_list, raw_data_struct_type) \
+            .withColumn("row_id", monotonically_increasing_id()) \
+            .withColumn("ts_inserimento", lit(datetime.now())) \
+            .withColumn("dt_inserimento", lit(datetime.now().date())) \
+            .withColumn("dt_riferimento", lit(dt_riferimento_date))
 
         self.__logger.info("Successfully created raw pyspark.sql.DataFrame")
-        return raw_dataframe\
-            .orderBy("row_id")\
+        return raw_dataframe \
+            .orderBy("row_id") \
             .select(["row_id"] + list(filter(lambda x: not x.lower() == "row_id", raw_dataframe.columns)))

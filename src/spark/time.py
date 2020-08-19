@@ -13,4 +13,4 @@ PYTHON_FORMAT = {
     "dd_MM_yyyy HH:mm:ss": "%d_%m_%Y %H:%M:%S"
 }
 
-BUSINESS_DATE_FORMAT: str = "yyyy-MM-dd"
+DT_RIFERIMENTO_DATE: str = "yyyy-MM-dd"

@@ -11,7 +11,7 @@ if __name__ == "__main__":
     from src.spark.engine.initial_load import InitialLoadEngine
     from src.spark.engine.re_load import ReloadEngine
     from src.spark.engine.source_load import SourceLoadEngine
-    from src.spark.time import BUSINESS_DATE_FORMAT, PYTHON_FORMAT
+    from src.spark.time import DT_RIFERIMENTO_DATE, PYTHON_FORMAT
 
     # LOGGING CONFIGURATION
     with open("src/logging.ini", "r") as f:
@@ -81,7 +81,7 @@ if __name__ == "__main__":
                                         required=True)
 
         # OPTION -d, --business--date
-        dt_riferimento_format: str = PYTHON_FORMAT[BUSINESS_DATE_FORMAT]
+        dt_riferimento_format: str = PYTHON_FORMAT[DT_RIFERIMENTO_DATE]
         source_load_parser.add_argument("-d", "--dt--riferimento",
                                         type=str,
                                         dest="dt_riferimento",
