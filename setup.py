@@ -24,7 +24,7 @@ def read_me():
 setup(
 
     name="lake_cedacri",
-    version="0.0.1",
+    version="0.1",
     description="Python project that populates tables on MySQL server using pyspark.sql API",
     long_description=read_me(),
     long_description_content_type="text/markdown",
