@@ -41,7 +41,7 @@ class RawDataGenerator:
         self.__time_delta: timedelta = self.__upper_bound_date - self.__lower_bound_date
 
         self.__cd_istituto_range: List[str] = ["1", "27", "94", "95", None]
-        self.__cd_istituto_weights: List[float] = [0.33, 0.05, 0.33, 0.33, 0.05]
+        self.__cd_istituto_weights: List[float] = [0.332, 0.002, 0.332, 0.332, 0.002]
 
         self.__ndg_range: List[str] = list(map(lambda x: str(x), range(270, 5184)))
 
@@ -51,17 +51,30 @@ class RawDataGenerator:
         self.__stato_ndg_range: List[str] = ["ATTIVO", "NON ATTIVO", "SOSPESO", None]
         self.__stato_ndg_weights: List[float] = [0.95, 0.02, 0.02, 0.01]
 
+        self._flag_range: List[str] = ["Y", "N", None]
+        self._flag_range_weights: List[float] = [0.498, 0.498, 0.004]
+
         self.__COLUMN_DESCRIPTIONS: dict = {
 
             "cod_istituto": self._sample_from_range(self.__cd_istituto_range, weights=self.__cd_istituto_weights),
             "ndg": self._sample_from_range(self.__ndg_range),
+            "conto": self._sample_from_range(self.__ndg_range),
             "tipo_ndg": self._sample_from_range(self.__tipo_ndg_range, weights=self.__tipo_ndg_weights),
             "data": self._generate_date_or_datetime_list,
+            "time": self._generate_date_or_datetime_list,
             "timestamp": self._generate_date_or_datetime_list,
-            "stato_ndg": self._sample_from_range(self.__stato_ndg_range, weights=self.__stato_ndg_weights)
+            "stato_ndg": self._sample_from_range(self.__stato_ndg_range, weights=self.__stato_ndg_weights),
+            "double": self._generate_random_doubles(1000),
+            "flag": self._sample_from_range(self._flag_range, weights=self._flag_range_weights)
         }
 
         random.seed()
+
+    def _generate_random_doubles(self, max_value: int, number_of_digits: int = 3) -> List[str]:
+
+        # FIRST GENERATE PURE RANDOM DATETIMES
+        random_array: List[float] = list(map(lambda x: x * max_value, [random.random() for _ in range(self.__n_records)]))
+        return list(map(lambda x: f"{x:.{number_of_digits}f}", random_array))
 
     def _generate_date_or_datetime_list(self, output_date_format: str) -> List[str]:
 
