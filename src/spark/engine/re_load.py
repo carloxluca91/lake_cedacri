@@ -65,20 +65,20 @@ class ReloadEngine(AbstractEngine):
         date_time_now: datetime = datetime.now()
 
         # READ OLD SPECIFICATIONS AND INSERT THEM INTO THE HISTORICAL SPECIFICATIONS
-        old_specification_df: DataFrame = self._read_from_jdbc(database, specification_actual_table)\
-            .withColumn("ts_fine_validita", lit(date_time_now))\
+        old_specification_df: DataFrame = self._read_from_jdbc(database, specification_actual_table) \
+            .withColumn("ts_fine_validita", lit(date_time_now)) \
             .withColumn("dt_fine_validita", lit(date_time_now.date()))
 
         self._write_to_jdbc(old_specification_df, database, specification_historical_table, "append")
 
-        old_version_number: float = old_specification_df.selectExpr("versione")\
-            .distinct()\
+        old_version_number: str = old_specification_df.selectExpr("versione") \
+            .distinct() \
             .collect()[0][0]
 
-        new_version_number: float = old_version_number + 0.1
-        self.__logger.info(f"Updating version number from {old_version_number:.1f} to {new_version_number:.1f}")
+        new_version_number: str = f"{float(old_version_number) + 0.1:.1f}"
+        self.__logger.info(f"Updating version number from {old_version_number} to {new_version_number}")
 
         # OVERWRITE OLD SPECIFICATIONS
-        new_specification_df: DataFrame = self._read_mapping_specification_from_file()\
-            .withColumn("versione", lit(new_version_number).cast("double"))
+        new_specification_df: DataFrame = self._read_mapping_specification_from_file() \
+            .withColumn("versione", lit(new_version_number).cast("string"))
         self._write_to_jdbc(new_specification_df, database, specification_actual_table, "overwrite", jdbc_overwrite_option)

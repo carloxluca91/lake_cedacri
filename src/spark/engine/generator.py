@@ -111,7 +111,7 @@ class RawDataGenerator:
             column_type: str = column_specification[1].lower()
             column_desc: str = column_specification[2].lower()
 
-            if column_desc in ["data", "timestamp"]:
+            if column_desc in ["data", "time", "timestamp"]:
 
                 column_date_format: str = column_specification[3]
                 self.__logger.info(f"Processing column # {index} (name: '{column_name}', desc: '{column_desc}', type: '{column_type}', "
