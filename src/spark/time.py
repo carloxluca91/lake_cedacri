@@ -9,6 +9,8 @@ PYTHON_FORMAT = {
     "dd/MM/yyyy": "%d/%m/%Y",
     "dd_MM_yyyy": "%d_%m_%Y",
 
+    "dd-MM-yy": "%d-%m-%y",
+
     # TIME
     "HH:mm:ss": "%H:%M:%S",
 
