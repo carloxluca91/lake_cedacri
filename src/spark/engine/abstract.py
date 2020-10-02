@@ -146,7 +146,7 @@ class AbstractEngine(ABC):
             impacted_table,
             exception_message,
             -1 if exception_message is not None else 0,
-            "FAILED" if exception_message is not None else "SUCCESSED")]
+            "failed" if exception_message is not None else "successed")]
 
         logging_table_schema: str = self._job_properties["path"]["application_log_schema_file_path"]
         logging_record_df: DataFrame = self._spark_session \

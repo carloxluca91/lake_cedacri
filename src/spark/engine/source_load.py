@@ -43,8 +43,8 @@ class SourceLoadEngine(AbstractEngine):
 
                 # FILTER SPECIFICATION TABLE ACCORDING TO PROVIDED BANCLL
                 self.__logger.info(f"Table '{target_database}'.'{specification_table}' exists. So, trying to read it")
-                bancll_specification_rows: List[Row] = self._read_from_jdbc(target_database, specification_table)\
-                    .filter(f.col("flusso") == bancll_name)\
+                bancll_specification_rows: List[Row] = self._read_from_jdbc(target_database, specification_table) \
+                    .filter((f.col("flusso") == bancll_name) & f.col("colonna_rd").isNotNull()) \
                     .collect()
 
                 # CHECK IF SOME CONFIGURATION CAN BE FOUND
