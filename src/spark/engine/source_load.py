@@ -69,10 +69,15 @@ class SourceLoadEngine(AbstractEngine):
                                                                          x["posizione_iniziale"]),
                                                               bancll_specification_rows))
 
-                # SORT THE TUPLES BY 'posizione_iniziale' AND CREATE RELATED DATAFRAME
+                # FILTER THE TUPLES SUCH THAT 'colonna_rd' is Not None, SORT THEM BY 'posizione_iniziale'
+                filtered_and_sorted_specifications: List[Tuple] = sorted(
+                    filter(lambda x: x[0] is not None, column_specifications),
+                    key=lambda x: x[4])
+
+                # AND USE THEM TO CREATE A DATAFRAME
                 raw_dataframe: DataFrame = self.__raw_data_generator \
                     .get_raw_dataframe(self._spark_session,
-                                       sorted(column_specifications, key=lambda x: x[4]),
+                                       filtered_and_sorted_specifications,
                                        dt_riferimento)
 
                 self._try_to_write_to_jdbc(raw_dataframe, target_database, raw_historical_table_name, "append", insert_application_log)

@@ -36,7 +36,7 @@ class RawDataGenerator:
 
         self.__logger = logging.getLogger(__name__)
         self.__n_records: int = n_records
-        self.__lower_bound_date: datetime = datetime(1910, 1, 1, 0, 0)
+        self.__lower_bound_date: datetime = datetime(1950, 1, 1, 0, 0)
         self.__upper_bound_date: datetime = datetime.now()
         self.__time_delta: timedelta = self.__upper_bound_date - self.__lower_bound_date
 
