@@ -7,13 +7,14 @@ if __name__ == "__main__":
     from logging import config
     from typing import List
     from datetime import datetime
-    from src.spark.branch import Branch
-    from src.spark.engine.initial_load import InitialLoadEngine
-    from src.spark.engine.re_load import ReloadEngine
-    from src.spark.engine.source_load import SourceLoadEngine
-    from src.spark.time import DT_RIFERIMENTO_DATE, PYTHON_FORMAT
 
-    # LOGGING CONFIGURATION
+    from lake_cedacri.utils.branch import Branch
+    from lake_cedacri.engine.initial_load import InitialLoadEngine
+    from lake_cedacri.engine.re_load import ReloadEngine
+    from lake_cedacri.engine.source_load import SourceLoadEngine
+    from lake_cedacri.utils.time import TimeUtils
+
+    # Logging configuration
     with open("src/logging.ini", "r") as f:
 
         config.fileConfig(f)
@@ -22,20 +23,20 @@ if __name__ == "__main__":
     logger.info("Successfully loaded logging configuration")
     initial_parser = argparse.ArgumentParser()
 
-    # OPTION -b, --branch
+    # Option -b, --branch
     initial_parser.add_argument("-b", "--branch",
-                               type=str,
-                               dest="branch_name",
-                               metavar="branch",
-                               help="application branch to be run",
-                               required=True)
+                                type=str,
+                                dest="branch_name",
+                                metavar="branch",
+                                help="application branch to be run",
+                                required=True)
 
-    # OPTION -p, --properties
+    # Option -p, --properties
     initial_parser.add_argument("-p", "--properties",
                                 type=str,
                                 dest="spark_job_ini_file",
                                 metavar="example.ini",
-                                help=".ini file holding spark job information supplied via spark-submit --files option",
+                                help=".ini file holding lake_cedacri job information supplied via lake_cedacri-submit --files option",
                                 required=True)
 
     (parsed_arguments, unknown_arguments) = initial_parser.parse_known_args()
@@ -43,7 +44,7 @@ if __name__ == "__main__":
     spark_job_ini_file: str = parsed_arguments.spark_job_ini_file
 
     logger.info(f"Parsed branch name: '{branch_name}'")
-    logger.info(f"Provided spark job file: '{spark_job_ini_file}'")
+    logger.info(f"Provided lake_cedacri job file: '{spark_job_ini_file}'")
 
     if branch_name == Branch.INITIAL_LOAD.value:
 
@@ -53,7 +54,7 @@ if __name__ == "__main__":
 
         re_load_parser = argparse.ArgumentParser()
 
-        # OPTION -o, --overwrite
+        # Option -o, --overwrite
         re_load_parser.add_argument("-o", "--overwrite",
                                     dest="overwrite_flag",
                                     action="store_true",
@@ -71,7 +72,7 @@ if __name__ == "__main__":
 
         source_load_parser = argparse.ArgumentParser()
 
-        # OPTION -s, --sources
+        # Option -s, --sources
         source_load_parser.add_argument("-s", "--sources",
                                         type=str,
                                         nargs="+",
@@ -80,17 +81,17 @@ if __name__ == "__main__":
                                         help="list of raw sources (BANCLL) to be loaded (separated by blank space if more than one)",
                                         required=True)
 
-        # OPTION -d, --business--date
-        dt_riferimento_format: str = PYTHON_FORMAT[DT_RIFERIMENTO_DATE]
+        # Option -d, --business--date
+        dt_riferimento_format: str = TimeUtils.dt_riferimento_format()
         source_load_parser.add_argument("-d", "--dt--riferimento",
                                         type=str,
                                         dest="dt_riferimento",
                                         metavar="date",
                                         help=f"reference date to be used for data loading (format {dt_riferimento_format})",
                                         required=False,
-                                        default=datetime.now().strftime(dt_riferimento_format))
+                                        default=datetime.now().strftime(TimeUtils.to_python_format(dt_riferimento_format)))
 
-        # OPTION -n, --number-of-records
+        # Option -n, --number-of-records
         source_load_parser.add_argument("-n", "--n-records",
                                         type=int,
                                         dest="number_of_records",
@@ -99,24 +100,24 @@ if __name__ == "__main__":
                                         required=False,
                                         default=1000)
 
-        # RETRIEVE ARGUMENTS
+        # Parse input arguments
         (parsed_arguments, unknown_arguments) = source_load_parser.parse_known_args()
         bancll_names: List[str] = parsed_arguments.bancll_names
         input_dt_riferimento: str = parsed_arguments.dt_riferimento
         number_of_records: int = parsed_arguments.number_of_records
 
         logger.info(f"Provided {len(bancll_names)} BANCLL(s): {bancll_names}")
-        logger.info(f"Provided data reference date: '{input_dt_riferimento}'")
+        logger.info(f"Provided dt_riferimento: '{input_dt_riferimento}'")
         logger.info(f"Number of records: {number_of_records}")
 
-        # CHECK THAT DT_RIFERIMENTO IS CORRECT (IF PROVIDED)
+        # Check validity of dt_riferimento (if provided)
         try:
 
-            datetime.strptime(input_dt_riferimento, dt_riferimento_format)
+            TimeUtils.to_date(input_dt_riferimento, dt_riferimento_format)
 
         except ValueError:
 
-            raise Exception(f"Invalid reference date. Provided '{input_dt_riferimento}', should follow '{dt_riferimento_format}'") from None
+            raise ValueError(f"Invalid reference date. Provided '{input_dt_riferimento}', should follow '{dt_riferimento_format}'") from None
 
         else:
 
