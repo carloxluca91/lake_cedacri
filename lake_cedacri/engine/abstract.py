@@ -7,11 +7,12 @@ from typing import List, Tuple, Union
 
 import mysql.connector
 from pyspark import SparkContext
-from pyspark.sql import DataFrame, DataFrameReader, SparkSession
+from pyspark.sql import DataFrame, DataFrameReader
 from pyspark.sql.functions import lit
+from pyspark_utils.sql import DataFrameUtils, SparkSessionUtils
+from time_utils import TimeUtils
 
-from lake_cedacri.utils.spark import SparkUtils
-from lake_cedacri.utils.time import TimeUtils
+from lake_cedacri.utils import SparkUtils
 
 
 class AbstractEngine(ABC):
@@ -34,14 +35,7 @@ class AbstractEngine(ABC):
             self._job_properties.read_file(f)
             self._logger.info(f"Successfully loaded job properties dict. Job properties sections: {self._job_properties.sections()}")
 
-        self._logger.info(f"Trying to get or create SparkSession")
-        self._spark_session: SparkSession = SparkSession \
-            .builder \
-            .getOrCreate()
-
-        self._logger.info(f"Successfully got or created SparkSession for application '{self._spark_session.sparkContext.appName}'. "
-                           f"Application Id: '{self._spark_session.sparkContext.applicationId}', "
-                           f"UI url: {self._spark_session.sparkContext.uiWebUrl}")
+        self._spark_session = SparkSessionUtils.get_or_create()
 
         jdbc_host = self._job_properties["jdbc"]["host"]
         jdbc_port = int(self._job_properties["jdbc"]["port"])
@@ -94,8 +88,7 @@ class AbstractEngine(ABC):
                                 exception_message: Union[str, None] = None):
 
         spark_context: SparkContext = self._spark_session.sparkContext
-        business_date_format: str = TimeUtils.dt_riferimento_format()
-        dt_riferimento: date = datetime.strptime(dt_riferimento, business_date_format).date() if dt_riferimento is not None else None
+        dt_riferimento: date = TimeUtils.to_date(dt_riferimento, TimeUtils.java_default_dt_format()) if dt_riferimento is not None else None
 
         logging_record_tuple_list: List[Tuple] = [(
             spark_context.applicationId,
@@ -114,11 +107,11 @@ class AbstractEngine(ABC):
         logging_record_df: DataFrame = self._spark_session \
             .createDataFrame(logging_record_tuple_list, SparkUtils.to_struct_type(logging_table_schema))
 
-        database_name: str = self._job_properties["lake_cedacri"]["database"]
-        table_name: str = self._job_properties["lake_cedacri"]["application_log_table_name"]
+        database_name: str = self._job_properties["spark"]["database"]
+        table_name: str = self._job_properties["spark"]["application_log_table_name"]
         if self._table_exists(database_name, table_name):
 
-            self._logger.info(f"Logging table '{database_name}'.'{table_name}' already exists")
+            self._logger.info(f"Logging table '{database_name}.{table_name}' already exists")
 
         else:
 
@@ -143,13 +136,13 @@ class AbstractEngine(ABC):
         specification_tsv_file_path: str = self._job_properties["path"]["specification_tsv_file_path"]
         specification_schema_file_path: str = self._job_properties["path"]["specification_schema_file_path"]
 
-        specification_tsv_file_sep: str = self._job_properties["lake_cedacri"]["specification_tsv_file_delimiter"]
-        specification_tsv_file_header_str: str = self._job_properties["lake_cedacri"]["specification_tsv_file_header"]
+        specification_tsv_file_sep: str = self._job_properties["spark"]["specification_tsv_file_delimiter"]
+        specification_tsv_file_header_str: str = self._job_properties["spark"]["specification_tsv_file_header"]
         specification_tsv_file_header_bool: bool = True if specification_tsv_file_header_str.lower() == "true" else False
 
         self._logger.info(f"Attempting to load file at path '{specification_tsv_file_path}' as a pyspark.sql.DataFrame")
 
-        # READ THE FILE
+        # Read the file
         specification_df: DataFrame = self._spark_session.read \
             .format("csv") \
             .option("sep", specification_tsv_file_sep) \
@@ -157,7 +150,7 @@ class AbstractEngine(ABC):
             .load(specification_tsv_file_path, schema=SparkUtils.to_struct_type(specification_schema_file_path))
 
         self._logger.info(f"Successfully loaded file at path '{specification_tsv_file_path}' as a pyspark.sql.DataFrame")
-        self._logger.info(f"Dataframe original schema (provided): \n{SparkUtils.schema_tree_string(specification_df)}")
+        self._logger.info(f"Dataframe original schema (provided): \n{DataFrameUtils.schema_tree_string(specification_df)}")
 
         return specification_df \
             .withColumn("ts_inizio_validita", lit(datetime.now())) \
@@ -168,7 +161,7 @@ class AbstractEngine(ABC):
         self._logger.info(f"Checking existence of table '{database_name}'.'{table_name}'")
         self._mysql_cursor.execute(f"SHOW TABLES IN {database_name}")
 
-        # GET LIST OF EXISTING TABLES WITHIN GIVEN DATABASE
+        # Get list of existing tables
         existing_tables: List[str] = list(map(lambda x: x[0].lower(), self._mysql_cursor))
         existing_tables_str: str = ", ".join(map(lambda x: f"'{x}'", existing_tables))
         self._logger.info(f"Existing tables within DB '{database_name}': {existing_tables_str}")
@@ -181,7 +174,7 @@ class AbstractEngine(ABC):
         truncate_option: str = "true" if savemode.lower() == "overwrite" and truncate else "false"
         self._logger.info(f"Starting to insert data into table '{full_table_name}' using savemode '{savemode}'. "
                            f"Value of 'truncate' option: {truncate_option}")
-        self._logger.info(f"DataFrame to be written has schema: \n{SparkUtils.schema_tree_string(dataframe)}")
+        self._logger.info(f"DataFrame to be written has schema: \n{DataFrameUtils.schema_tree_string(dataframe)}")
 
         dataframe.write \
             .format("jdbc") \

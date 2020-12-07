@@ -7,15 +7,15 @@ if __name__ == "__main__":
     from logging import config
     from typing import List
     from datetime import datetime
+    from time_utils import TimeUtils
 
-    from lake_cedacri.utils.branch import Branch
-    from lake_cedacri.engine.initial_load import InitialLoadEngine
-    from lake_cedacri.engine.re_load import ReloadEngine
-    from lake_cedacri.engine.source_load import SourceLoadEngine
-    from lake_cedacri.utils.time import TimeUtils
+    from lake_cedacri.engine import InitialLoadEngine
+    from lake_cedacri.engine import ReloadEngine
+    from lake_cedacri.engine import SourceLoadEngine
+    from lake_cedacri.utils import Branch
 
     # Logging configuration
-    with open("src/logging.ini", "r") as f:
+    with open("lake_cedacri/logging.ini", "r") as f:
 
         config.fileConfig(f)
 
@@ -36,7 +36,7 @@ if __name__ == "__main__":
                                 type=str,
                                 dest="spark_job_ini_file",
                                 metavar="example.ini",
-                                help=".ini file holding lake_cedacri job information supplied via lake_cedacri-submit --files option",
+                                help=".ini file holding lake_cedacri job information supplied via spark-submit --files option",
                                 required=True)
 
     (parsed_arguments, unknown_arguments) = initial_parser.parse_known_args()
@@ -82,14 +82,14 @@ if __name__ == "__main__":
                                         required=True)
 
         # Option -d, --business--date
-        dt_riferimento_format: str = TimeUtils.dt_riferimento_format()
+        dt_riferimento_format: str = TimeUtils.java_default_dt_format()
         source_load_parser.add_argument("-d", "--dt--riferimento",
                                         type=str,
                                         dest="dt_riferimento",
                                         metavar="date",
                                         help=f"reference date to be used for data loading (format {dt_riferimento_format})",
                                         required=False,
-                                        default=datetime.now().strftime(TimeUtils.to_python_format(dt_riferimento_format)))
+                                        default=TimeUtils.to_string(datetime.now().date(), dt_riferimento_format))
 
         # Option -n, --number-of-records
         source_load_parser.add_argument("-n", "--n-records",

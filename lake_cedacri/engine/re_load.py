@@ -6,8 +6,8 @@ from typing import Callable
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import lit
 
-from lake_cedacri.utils.branch import Branch
-from lake_cedacri.engine.abstract import AbstractEngine
+from lake_cedacri.utils import Branch
+from lake_cedacri.engine import AbstractEngine
 
 
 class ReloadEngine(AbstractEngine):
@@ -25,9 +25,9 @@ class ReloadEngine(AbstractEngine):
 
     def run(self):
 
-        specification_table: str = self._job_properties["lake_cedacri"]["specification_table_name"]
-        specification_historical_table: str = self._job_properties["lake_cedacri"]["specification_historical_table_name"]
-        database: str = self._job_properties["lake_cedacri"]["database"]
+        specification_table: str = self._job_properties["spark"]["specification_table_name"]
+        specification_historical_table: str = self._job_properties["spark"]["specification_historical_table_name"]
+        database: str = self._job_properties["spark"]["database"]
 
         try:
 

@@ -2,10 +2,10 @@ from functools import partial
 from typing import Callable, Tuple, List
 
 from pyspark.sql import DataFrame, Row, Column
-from pyspark.sql import functions as f
+from pyspark.sql import functions
 
-from lake_cedacri.utils.branch import Branch
-from lake_cedacri.engine.abstract import AbstractEngine
+from lake_cedacri.utils import Branch
+from lake_cedacri.engine import AbstractEngine
 
 
 class SourceLoadEngine(AbstractEngine):
@@ -36,8 +36,8 @@ class SourceLoadEngine(AbstractEngine):
             try:
 
                 # Filter specification table according to provided bancll
-                self._logger.info(f"Table '{target_database}'.'{specification_table}' exists. So, trying to read it")
-                specification_filter_column: Column = f.trim(f.lower(f.col("flusso"))) == bancll_name
+                self._logger.info(f"Table '{target_database}.{specification_table}' exists. So, trying to read it")
+                specification_filter_column: Column = functions.trim(functions.lower(functions.col("flusso"))) == bancll_name
                 bancll_specification_rows: List[Row] = self._read_from_jdbc(target_database, specification_table) \
                     .filter(specification_filter_column) \
                     .collect()

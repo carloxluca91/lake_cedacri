@@ -1,4 +1,4 @@
 .idea
-build
-dist
-lake_cedacri.egg-info
+build/*
+dist/*
+lake_cedacri.egg-info/*

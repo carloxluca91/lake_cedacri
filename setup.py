@@ -3,7 +3,7 @@ from setuptools import find_packages, setup
 from setuptools.command.build_py import build_py as build_py_orig
 
 
-exclude = ["src.main"]
+exclude = ["lake_cedacri.main"]
 
 
 class BuildPy(build_py_orig):
@@ -32,7 +32,7 @@ setup(
     author="Luca Carloni",
     author_email="carloni.luca91@gmail.com",
     packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
-    package_data={"src": ["logging.ini"]},
+    package_data={"lake_cedacri": ["logging.ini"]},
     include_package_data=True,
     cmdclass={'build_py': BuildPy},
     install_requires=["pyspark>=2.2", "mysql-connector-python"],

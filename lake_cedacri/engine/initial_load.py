@@ -4,8 +4,8 @@ from functools import partial
 from typing import Callable, List
 from pyspark.sql import DataFrame
 
-from lake_cedacri.utils.branch import Branch
-from lake_cedacri.engine.abstract import AbstractEngine
+from lake_cedacri.engine import AbstractEngine
+from lake_cedacri.utils import Branch
 
 
 class InitialLoadEngine(AbstractEngine):
@@ -22,8 +22,8 @@ class InitialLoadEngine(AbstractEngine):
 
     def run(self) -> None:
 
-        database_to_create: str = self._job_properties["lake_cedacri"]["database"]
-        table_to_create: str = self._job_properties["lake_cedacri"]["specification_table_name"]
+        database_to_create: str = self._job_properties["spark"]["database"]
+        table_to_create: str = self._job_properties["spark"]["specification_table_name"]
         try:
 
             self._create_database_if_not_exists(database_to_create)
