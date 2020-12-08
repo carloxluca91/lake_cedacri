@@ -1,13 +1,13 @@
 import logging
-from datetime import datetime
 from functools import partial
 from typing import Callable
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import lit
+from time_utils import TimeUtils
 
-from lake_cedacri.utils import Branch
 from lake_cedacri.engine import AbstractEngine
+from lake_cedacri.utils import Branch
 
 
 class ReloadEngine(AbstractEngine):
@@ -62,12 +62,11 @@ class ReloadEngine(AbstractEngine):
         # so, according to above documentation, truncate = true
 
         jdbc_overwrite_option: bool = not self._overwrite_flag
-        date_time_now: datetime = datetime.now()
 
         # Read old specifications and insert them into the historical specifications
         old_specification_df: DataFrame = self._read_from_jdbc(database, specification_actual_table) \
-            .withColumn("ts_fine_validita", lit(date_time_now)) \
-            .withColumn("dt_fine_validita", lit(date_time_now.date()))
+            .withColumn("ts_fine_validita", lit(TimeUtils.datetime_now())) \
+            .withColumn("dt_fine_validita", lit(TimeUtils.date_now()))
 
         self._write_to_jdbc(old_specification_df, database, specification_historical_table, "append")
 

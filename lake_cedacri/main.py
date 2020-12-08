@@ -123,9 +123,9 @@ if __name__ == "__main__":
 
             logger.info("Successfully parsed dt_riferimento")
 
-        bancll_loader: SourceLoadEngine = SourceLoadEngine(spark_job_ini_file, number_of_records)
+        source_load_engine = SourceLoadEngine(spark_job_ini_file)
         for (bancll_index, bancll_name) in enumerate(bancll_names):
 
             logger.info(f"Starting to load raw data for BANCLL # {bancll_index + 1} ('{bancll_name}')")
-            bancll_loader.run(bancll_name, input_dt_riferimento)
+            source_load_engine.run(bancll_name, number_of_records, input_dt_riferimento)
             logger.info(f"Successfully loaded data for BANCLL # {bancll_index + 1} ('{bancll_name}')")

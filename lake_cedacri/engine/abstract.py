@@ -2,7 +2,7 @@ import configparser
 import logging
 import os
 from abc import ABC
-from datetime import date, datetime
+# from datetime import date, datetime
 from typing import List, Tuple, Union
 
 import mysql.connector
@@ -83,29 +83,32 @@ class AbstractEngine(ABC):
 
     def _insert_application_log(self, application_branch: str,
                                 bancll_name: Union[str, None],
-                                dt_riferimento: Union[str, None],
+                                dt_riferimento_date: Union[str, None],
                                 impacted_table: Union[str, None],
                                 exception_message: Union[str, None] = None):
 
         spark_context: SparkContext = self._spark_session.sparkContext
-        dt_riferimento: date = TimeUtils.to_date(dt_riferimento, TimeUtils.java_default_dt_format()) if dt_riferimento is not None else None
+        dt_riferimento_date = TimeUtils.to_date(dt_riferimento_date, TimeUtils.java_default_dt_format())
 
         logging_record_tuple_list: List[Tuple] = [(
             spark_context.applicationId,
             spark_context.appName,
+            TimeUtils.datetime_from_epoch_millis(spark_context.startTime),
+            TimeUtils.date_from_epoch_millis(spark_context.startTime),
             application_branch,
-            datetime.fromtimestamp(spark_context.startTime / 1000),
-            datetime.now(),
             bancll_name,
-            dt_riferimento,
+            dt_riferimento_date,
             impacted_table,
-            exception_message,
+            TimeUtils.datetime_now(),
+            TimeUtils.date_now(),
             -1 if exception_message is not None else 0,
-            "KO" if exception_message is not None else "OK")]
+            "KO" if exception_message is not None else "OK",
+            exception_message,)]
 
         logging_table_schema: str = self._job_properties["path"]["application_log_schema_file_path"]
-        logging_record_df: DataFrame = self._spark_session \
-            .createDataFrame(logging_record_tuple_list, SparkUtils.to_struct_type(logging_table_schema))
+        logging_record_df: DataFrame = self._spark_session.createDataFrame(
+            logging_record_tuple_list,
+            SparkUtils.to_struct_type(logging_table_schema))
 
         database_name: str = self._job_properties["spark"]["database"]
         table_name: str = self._job_properties["spark"]["application_log_table_name"]
@@ -115,7 +118,7 @@ class AbstractEngine(ABC):
 
         else:
 
-            self._logger.warning(f"Logging table '{database_name}'.'{table_name}' does not exists. So, creating it now")
+            self._logger.warning(f"Logging table '{database_name}.{table_name}' does not exists. So, creating it now")
 
         self._write_to_jdbc(logging_record_df, database_name, table_name, "append")
 
@@ -153,8 +156,8 @@ class AbstractEngine(ABC):
         self._logger.info(f"Dataframe original schema (provided): \n{DataFrameUtils.schema_tree_string(specification_df)}")
 
         return specification_df \
-            .withColumn("ts_inizio_validita", lit(datetime.now())) \
-            .withColumn("dt_inizio_validita", lit(datetime.now().date()))
+            .withColumn("ts_inizio_validita", lit(TimeUtils.datetime_now())) \
+            .withColumn("dt_inizio_validita", lit(TimeUtils.date_now()))
 
     def _table_exists(self, database_name: str, table_name: str) -> bool:
 
