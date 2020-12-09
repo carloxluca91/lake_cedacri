@@ -3,6 +3,7 @@ import logging
 from functools import partial
 from typing import Callable, List
 from pyspark.sql import DataFrame
+from pyspark.sql.functions import lit
 
 from lake_cedacri.engine import AbstractEngine
 from lake_cedacri.utils import Branch
@@ -32,11 +33,11 @@ class InitialLoadEngine(AbstractEngine):
         except Exception as e:
 
             self._logger.exception(f"Unable to save data into table '{database_to_create}'.'{table_to_create}'")
-            self._insert_initial_load_log(table_to_create=table_to_create, exception_message=repr(e))
+            self._insert_initial_load_log(impacted_table=table_to_create, exception_message=repr(e))
 
         else:
 
-            self._insert_initial_load_log(table_to_create=table_to_create)
+            self._insert_initial_load_log(impacted_table=table_to_create)
 
     def _create_database_if_not_exists(self, database_to_create: str):
 
@@ -60,8 +61,6 @@ class InitialLoadEngine(AbstractEngine):
             self._logger.info(f"DB '{database_to_create}' already exists. So, not much to do :)")
 
     def _load_mapping_specification(self, database_to_use: str, table_to_create: str):
-
-        from pyspark.sql.functions import lit
 
         # check if the given table exists within given database
         self._logger.info(f"Table to search (and eventually create) within DB '{database_to_use}' is '{table_to_create}'")

@@ -71,7 +71,7 @@ class AbstractEngine(ABC):
         # MySQL Python connector
         self._mysql_connection: mysql.connector.MySQLConnection = mysql.connector.connect(** self._connector_options)
         self._logger.info(f"Successfully estabilished connection to '{self._connector_options['host']}:{str(self._connector_options['port'])}' "
-                           f"with credentials ('{self._connector_options['user']}', '{self._connector_options['password']}'")
+                           f"with credentials ('{self._connector_options['user']}', '{self._connector_options['password']}')")
 
         # MySQL Python cursor (for SQL statements execution)
         self._mysql_cursor: mysql.connector.connection.MySQLCursor = self._mysql_connection.cursor()
@@ -83,12 +83,12 @@ class AbstractEngine(ABC):
 
     def _insert_application_log(self, application_branch: str,
                                 bancll_name: Union[str, None],
-                                dt_riferimento_date: Union[str, None],
+                                dt_riferimento: Union[str, None],
                                 impacted_table: Union[str, None],
                                 exception_message: Union[str, None] = None):
 
         spark_context: SparkContext = self._spark_session.sparkContext
-        dt_riferimento_date = TimeUtils.to_date(dt_riferimento_date, TimeUtils.java_default_dt_format())
+        dt_riferimento_date = TimeUtils.to_date(dt_riferimento, TimeUtils.java_default_dt_format()) if dt_riferimento is not None else None
 
         logging_record_tuple_list: List[Tuple] = [(
             spark_context.applicationId,
@@ -103,7 +103,7 @@ class AbstractEngine(ABC):
             TimeUtils.date_now(),
             -1 if exception_message is not None else 0,
             "KO" if exception_message is not None else "OK",
-            exception_message,)]
+            exception_message)]
 
         logging_table_schema: str = self._job_properties["path"]["application_log_schema_file_path"]
         logging_record_df: DataFrame = self._spark_session.createDataFrame(
@@ -177,7 +177,7 @@ class AbstractEngine(ABC):
         truncate_option: str = "true" if savemode.lower() == "overwrite" and truncate else "false"
         self._logger.info(f"Starting to insert data into table '{full_table_name}' using savemode '{savemode}'. "
                            f"Value of 'truncate' option: {truncate_option}")
-        self._logger.info(f"DataFrame to be written has schema: \n{DataFrameUtils.schema_tree_string(dataframe)}")
+        self._logger.info(f"DataFrame to be written has schema: {DataFrameUtils.schema_tree_string(dataframe)}")
 
         dataframe.write \
             .format("jdbc") \

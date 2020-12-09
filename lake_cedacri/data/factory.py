@@ -8,11 +8,11 @@ from pyspark.sql.types import StructType, StructField
 from pyspark_utils.sql import ColumnUtils, DataFrameUtils, SQLParser
 from time_utils import TimeUtils
 
-from lake_cedacri.data import RandomChoice, RandomNumber, RandomDate
-from lake_cedacri.data import RandomFunctionEnum
+from lake_cedacri.data.random import RandomChoice, RandomNumber, RandomDate
+from lake_cedacri.data.enum import RandomFunctionEnum
 
-SPECIFICATION_RECORD_COLUMNS = ["flusso", "tabella_rd", "nome_colonna", "posizione",
-                                "funzione", "tipo_colonna", "flag_nullable", "funzione_spark"]
+SPECIFICATION_RECORD_COLUMNS = ["flusso", "sorgente_rd", "colonna_rd", "posizione",
+                                "funzione", "tipo_colonna_rd", "flag_nullable", "funzione_spark"]
 SpecificationRecord = namedtuple("SpecificationRecord", SPECIFICATION_RECORD_COLUMNS)
 
 
@@ -63,12 +63,12 @@ class DataFactory:
 
                 # Update data collection and related StructType
                 random_raw_dataframe.append(random_data_maybe_nullable)
-                random_dataframe_schema.add(sr.nome_colonna,
-                                             ColumnUtils.spark_datatype(sr.tipo_colonna),
+                random_dataframe_schema.add(sr.colonna_rd,
+                                             ColumnUtils.spark_datatype(sr.tipo_colonna_rd),
                                              nullable=True)
 
-                cls._logger.info(f"Successfully created data for column # {i} '{sr.nome_colonna}', "
-                                 f"dataType = '{sr.tipo_colonna}', "
+                cls._logger.info(f"Successfully created data for column # {i} '{sr.colonna_rd}', "
+                                 f"dataType = '{sr.tipo_colonna_rd}', "
                                  f"flag_nullable = '{sr.flag_nullable}'")
 
         # Create dataframe with random data
@@ -89,8 +89,8 @@ class DataFactory:
             for i, sr_with_transformation in enumerate(specification_records_with_spark_transformation):
 
                 transformed_column: Column = SQLParser.parse(sr_with_transformation.funzione_spark)
-                random_dataframe = random_dataframe.withColumn(sr_with_transformation.nome_colonna, transformed_column)
-                cls._logger.info(f"Successfully transformed column '{sr_with_transformation.nome_colonna}'")
+                random_dataframe = random_dataframe.withColumn(sr_with_transformation.colonna_rd, transformed_column)
+                cls._logger.info(f"Successfully transformed column '{sr_with_transformation.colonna_rd}'")
 
             cls._logger.info(f"Successfully applied each Spark transformation. Schema: {DataFrameUtils.schema_tree_string(random_dataframe)}")
 

@@ -27,7 +27,7 @@ class SparkUtils:
         structtype_from_json: StructType = StructType(list(map(
             lambda x: StructField(name=x["name"],
                                   dataType=ColumnUtils.spark_datatype(x["type"]),
-                                  nullable=True if x["nullable"].lower() == "true" else False),
+                                  nullable=x["nullable"]),
             json_content["schema"])))
 
         logger.info(f"Successfully retrieved StructType from file '{json_file_path}'")

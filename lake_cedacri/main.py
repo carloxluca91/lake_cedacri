@@ -1,4 +1,3 @@
-
 if __name__ == "__main__":
 
     import argparse
@@ -6,7 +5,6 @@ if __name__ == "__main__":
 
     from logging import config
     from typing import List
-    from datetime import datetime
     from time_utils import TimeUtils
 
     from lake_cedacri.engine import InitialLoadEngine
@@ -83,16 +81,16 @@ if __name__ == "__main__":
 
         # Option -d, --business--date
         dt_riferimento_format: str = TimeUtils.java_default_dt_format()
-        source_load_parser.add_argument("-d", "--dt--riferimento",
+        source_load_parser.add_argument("-d", "--dtRiferimento",
                                         type=str,
                                         dest="dt_riferimento",
                                         metavar="date",
                                         help=f"reference date to be used for data loading (format {dt_riferimento_format})",
                                         required=False,
-                                        default=TimeUtils.to_string(datetime.now().date(), dt_riferimento_format))
+                                        default=TimeUtils.to_string(TimeUtils.date_now(), dt_riferimento_format))
 
         # Option -n, --number-of-records
-        source_load_parser.add_argument("-n", "--n-records",
+        source_load_parser.add_argument("-n", "--nRecords",
                                         type=int,
                                         dest="number_of_records",
                                         metavar="number",
