@@ -20,8 +20,8 @@ class SourceLoadEngine(AbstractEngine):
 
     def run(self, bancll_name: str, number_of_records: int, dt_riferimento: str) -> None:
 
-        target_database: str = self._job_properties["lake_cedacri"]["database"]
-        specification_table: str = self._job_properties["lake_cedacri"]["specification_table_name"]
+        target_database: str = self._job_properties["spark"]["database"]
+        specification_table: str = self._job_properties["spark"]["specification_table_name"]
         if self._table_exists(target_database, specification_table):
 
             insert_application_log: Callable = partial(
@@ -34,7 +34,7 @@ class SourceLoadEngine(AbstractEngine):
 
                 # Filter specification table according to provided bancll
                 self._logger.info(f"Table '{target_database}.{specification_table}' exists. So, trying to read it")
-                specification_filter_column: Column = functions.trim(functions.lower(functions.col("flusso"))) == bancll_name
+                specification_filter_column: Column = functions.trim(functions.lower(functions.col("flusso"))) == bancll_name.lower()
                 bancll_specification_rows: List[Row] = self._read_from_jdbc(target_database, specification_table) \
                     .filter(specification_filter_column)\
                     .selectExpr(*SPECIFICATION_RECORD_COLUMNS) \
@@ -44,25 +44,24 @@ class SourceLoadEngine(AbstractEngine):
                 if len(bancll_specification_rows) == 0:
 
                     error_msg: str = f"No specification found for BANCLL '{bancll_name}'. Thus, nothing will be triggered"
-                    self._logger.warning(error_msg)
                     raise ValueError(error_msg)
 
                 self._logger.info(f"Identified {len(bancll_specification_rows)} rows related to BANCLL '{bancll_name}'")
 
-                raw_actual_table_name: str = set(map(lambda x: x["tabella_rd"], bancll_specification_rows)).pop().lower()
+                raw_actual_table_name: str = set(map(lambda x: x["sorgente_rd"], bancll_specification_rows)).pop().lower()
                 raw_historical_table_name: str = f"{raw_actual_table_name}_h"
                 raw_dataframe: DataFrame = DataFactory.create_data(self._spark_session,
                                                                    specification_rows=bancll_specification_rows,
                                                                    number_of_records=number_of_records,
                                                                    dt_riferimento=dt_riferimento)
 
-                self._try_to_write_to_jdbc(raw_dataframe, target_database, raw_historical_table_name, "append", insert_application_log)
                 self._try_to_write_to_jdbc(raw_dataframe, target_database, raw_actual_table_name, "overwrite", insert_application_log)
+                self._try_to_write_to_jdbc(raw_dataframe, target_database, raw_historical_table_name, "append", insert_application_log)
 
             except Exception as e:
 
                 self._logger.exception(f"Got an error while trying to create data for BANCLL '{bancll_name}', dt_riferimento '{dt_riferimento}'")
-                insert_application_log(impacted_table=None, exception_message=repr(e))
+                insert_application_log(impacted_table=f"t_rd_{bancll_name.lower()}", exception_message=repr(e))
 
         else:
 

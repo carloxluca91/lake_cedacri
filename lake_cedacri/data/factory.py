@@ -5,7 +5,7 @@ from typing import List, Any
 
 from pyspark.sql import Row, SparkSession, functions, Column
 from pyspark.sql.types import StructType, StructField
-from pyspark_utils.sql import ColumnUtils, DataFrameUtils, SQLParser
+from pyspark_utils.sql import DataTypeUtils, DataFrameUtils, SQLParser
 from time_utils import TimeUtils
 
 from lake_cedacri.data.random import RandomChoice, RandomNumber, RandomDate
@@ -30,12 +30,12 @@ class DataFactory:
     def create_data(cls, spark_session: SparkSession, specification_rows: List[Row], number_of_records: int, dt_riferimento: str):
 
         # Turn generic rows into namedtuples
-        specification_records: List[SpecificationRecord] = list(map(lambda x: SpecificationRecord(**x), specification_rows))
+        specification_records: List[SpecificationRecord] = list(map(lambda x: SpecificationRecord(**x.asDict()), specification_rows))
         cls._logger.info(f"Successfully turned {len(specification_rows)} {Row.__name__}(s) into {SpecificationRecord.__name__} object(s)")
 
         # Initialize random data and schema with 'row_id' column
         random_raw_dataframe: List[List[Any]] = [list(range(1, number_of_records + 1))]
-        random_dataframe_schema = StructType([StructField("row_id", ColumnUtils.spark_datatype("int"), False)])
+        random_dataframe_schema = StructType([StructField("row_id", DataTypeUtils.spark_datatype("int"), False)])
         for i, sr in enumerate(specification_records):
 
             # Match Python function to apply
@@ -64,7 +64,7 @@ class DataFactory:
                 # Update data collection and related StructType
                 random_raw_dataframe.append(random_data_maybe_nullable)
                 random_dataframe_schema.add(sr.colonna_rd,
-                                             ColumnUtils.spark_datatype(sr.tipo_colonna_rd),
+                                             DataTypeUtils.spark_datatype(sr.tipo_colonna_rd),
                                              nullable=True)
 
                 cls._logger.info(f"Successfully created data for column # {i} '{sr.colonna_rd}', "

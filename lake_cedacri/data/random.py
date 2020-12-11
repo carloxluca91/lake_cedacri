@@ -53,8 +53,16 @@ class RandomChoice(AbstractRandomFunction):
 
     def create_data(self, number_of_records: int) -> List[Any]:
 
+        def clean_value(x: Any) -> Any:
+
+            if isinstance(x, str):
+                return x if not x.startswith("'") and not x.endswith("'") else x[1:-1]
+            else:
+                return x
+
+        values = list(map(lambda x: clean_value(x), self._values))
         weights = list(map(lambda x: float(x), self._weights))
-        return random.choices(self._values, weights=weights, k=number_of_records)
+        return random.choices(values, weights=weights, k=number_of_records)
 
 
 class RandomDate(AbstractRandomFunction):

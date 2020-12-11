@@ -2,7 +2,6 @@ import configparser
 import logging
 import os
 from abc import ABC
-# from datetime import date, datetime
 from typing import List, Tuple, Union
 
 import mysql.connector
@@ -81,7 +80,8 @@ class AbstractEngine(ABC):
             .format("jdbc") \
             .options(** self._spark_jdbc_options)
 
-    def _insert_application_log(self, application_branch: str,
+    def _insert_application_log(self,
+                                application_branch: str,
                                 bancll_name: Union[str, None],
                                 dt_riferimento: Union[str, None],
                                 impacted_table: Union[str, None],
@@ -153,7 +153,7 @@ class AbstractEngine(ABC):
             .load(specification_tsv_file_path, schema=SparkUtils.to_struct_type(specification_schema_file_path))
 
         self._logger.info(f"Successfully loaded file at path '{specification_tsv_file_path}' as a pyspark.sql.DataFrame")
-        self._logger.info(f"Dataframe original schema (provided): \n{DataFrameUtils.schema_tree_string(specification_df)}")
+        self._logger.info(f"Dataframe provided schema: {DataFrameUtils.schema_tree_string(specification_df)}")
 
         return specification_df \
             .withColumn("ts_inizio_validita", lit(TimeUtils.datetime_now())) \

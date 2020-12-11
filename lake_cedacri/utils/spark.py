@@ -3,7 +3,7 @@ import logging
 import os
 
 from pyspark.sql.types import StructType, StructField
-from pyspark_utils.sql import ColumnUtils
+from pyspark_utils.sql import DataTypeUtils
 
 
 class SparkUtils:
@@ -26,7 +26,7 @@ class SparkUtils:
 
         structtype_from_json: StructType = StructType(list(map(
             lambda x: StructField(name=x["name"],
-                                  dataType=ColumnUtils.spark_datatype(x["type"]),
+                                  dataType=DataTypeUtils.spark_datatype(x["type"]),
                                   nullable=x["nullable"]),
             json_content["schema"])))
 
